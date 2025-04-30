@@ -58,7 +58,7 @@ const Sidebar = () => {
   if (!showSidebar) return null;
 
   return (
-    <div className={`bg-white shadow-sm flex flex-col fixed h-screen ${sidebarCollapsed ? 'w-16' : 'w-60'} transition-all duration-300 z-40`}>
+    <div className={`bg-white shadow-sm flex flex-col fixed left-0 top-0 h-screen ${sidebarCollapsed ? 'w-16' : 'w-60'} transition-all duration-300 z-40`}>
       {/* Logo */}
       <div className="p-4 flex items-center border-b">
         <div className="font-bold text-gray-800 flex items-center">

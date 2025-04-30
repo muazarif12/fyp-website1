@@ -18,7 +18,7 @@ const YouTubeCardWithModal = () => {
     console.log('YouTube link submitted:', youtubeLink);
     closeModal();
     // Navigate to the chatbot page and pass the YouTube link as state
-    navigate('/featurecard', { state: { youtubeLink } });
+    navigate('/chatbot', { state: { youtubeLink } });
   };
 
   const handleKeyDown = (e) => {
