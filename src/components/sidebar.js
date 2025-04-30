@@ -1,17 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { 
-  Youtube, 
-  MessageSquare, 
-  FileText, 
-  Highlighter, 
-  Calendar, 
-  Headphones, 
-  BookOpen, 
-  File, 
-  ChevronLeft, 
-  ChevronRight, 
-  Star
+import {
+  Youtube,
+  MessageSquare,
+  FileText,
+  Highlighter,
+  Calendar,
+  Headphones,
+  BookOpen,
+  File,
+  ChevronLeft,
+  ChevronRight,
+  Star,
+  Menu
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -22,13 +23,13 @@ const Sidebar = () => {
 
   // List of pages where the sidebar should be shown
   const sidebarPages = [
-    '/chatbot', 
-    '/transcript', 
-    '/englishdub', 
-    '/englishsub', 
-    '/highlights_reel', 
-    '/meetingminutes', 
-    '/podcasts', 
+    '/chatbot',
+    '/transcript',
+    '/englishdub',
+    '/englishsub',
+    '/highlights_reel',
+    '/meetingminutes',
+    '/podcasts',
     '/studyguide'
   ];
 
@@ -54,37 +55,57 @@ const Sidebar = () => {
     navigate(path);
   };
 
+  // Toggle sidebar collapsed state
+  const toggleSidebar = () => {
+    setSidebarCollapsed(!sidebarCollapsed);
+  };
+
   // Don't render the sidebar at all if it shouldn't be shown
   if (!showSidebar) return null;
 
   return (
     <div className={`bg-white shadow-sm flex flex-col fixed left-0 top-0 h-screen ${sidebarCollapsed ? 'w-16' : 'w-60'} transition-all duration-300 z-40`}>
-      {/* Logo */}
+      {/* Header with logo or hamburger */}
       <div className="p-4 flex items-center border-b">
-        <div className="font-bold text-gray-800 flex items-center">
-          {!sidebarCollapsed && <span>/</span>}
-          <span className={sidebarCollapsed ? 'text-xs' : 'ml-1'}>turbolearn ai</span>
-        </div>
-        <button 
-          className="ml-auto text-gray-500"
-          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-        >
-          {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-        </button>
+        {sidebarCollapsed ? (
+          // Hamburger menu when collapsed - clickable to expand
+          <button 
+            className="w-full flex justify-center focus:outline-none"
+            onClick={toggleSidebar}
+          >
+            <Menu size={22} className="text-gray-700 hover:text-gray-900" />
+          </button>
+        ) : (
+          // Logo when expanded
+          <div className="font-bold text-gray-800 flex items-center">
+            <span>/</span>
+            <span className="ml-1">VidSense</span>
+          </div>
+        )}
+        
+        {/* Toggle button - moved to the right side when expanded, hidden when collapsed */}
+        {!sidebarCollapsed && (
+          <button
+            className="ml-auto text-gray-500"
+            onClick={toggleSidebar}
+          >
+            <ChevronLeft size={18} />
+          </button>
+        )}
       </div>
-      
+     
       {/* Navigation */}
       <nav className="flex-1">
         <ul className="py-2">
           {navLinks.map((link) => (
             <li key={link.path}>
-              <button 
+              <button
                 onClick={() => handleNavigation(link.path)}
                 className={`flex items-center px-4 py-3 w-full text-left ${
-                  location.pathname === link.path 
-                    ? 'text-gray-900 bg-gray-100' 
+                  location.pathname === link.path
+                    ? 'text-gray-900 bg-gray-100'
                     : 'text-gray-600 hover:bg-gray-100'
-                } rounded-lg mx-2`}
+                } rounded-lg mx-2 ${sidebarCollapsed ? 'justify-center' : ''}`}
               >
                 {link.icon}
                 {!sidebarCollapsed && <span className="ml-3">{link.label}</span>}
@@ -93,7 +114,9 @@ const Sidebar = () => {
           ))}
         </ul>
       </nav>
-      
+     
+      {/* Removed the extra expand button at the bottom since we can now click the hamburger */}
+     
       {/* Upgrade button */}
       <div className="p-4">
         <button className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg flex items-center justify-center">
@@ -101,7 +124,7 @@ const Sidebar = () => {
           {!sidebarCollapsed && <span className="ml-2">Upgrade to Premium</span>}
         </button>
       </div>
-      
+     
       {/* User */}
       <div className="p-4 border-t flex items-center">
         <div className="w-8 h-8 rounded-full bg-purple-700 flex items-center justify-center text-white">
