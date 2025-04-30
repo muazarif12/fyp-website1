@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { Youtube, ChevronRight, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom'; // Add this
 
 const YouTubeCardWithModal = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [youtubeLink, setYoutubeLink] = useState('');
+  const navigate = useNavigate(); // Initialize navigate
 
-  const openModal = () => {
-    setIsModalOpen(true);
-  };
+  const openModal = () => setIsModalOpen(true);
 
   const closeModal = () => {
     setIsModalOpen(false);
@@ -15,10 +15,10 @@ const YouTubeCardWithModal = () => {
   };
 
   const handleSubmit = () => {
-    // Handle the YouTube link submission here
     console.log('YouTube link submitted:', youtubeLink);
-    // After handling, you might want to close the modal
     closeModal();
+    // Navigate to the chatbot page and pass the YouTube link as state
+    navigate('/featurecard', { state: { youtubeLink } });
   };
 
   const handleKeyDown = (e) => {
