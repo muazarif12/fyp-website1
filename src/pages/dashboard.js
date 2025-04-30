@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { FileText, Home, Mic, Settings, Star, Youtube, ChevronRight, FolderPlus, ChevronLeft } from 'lucide-react';
+import { Upload, Home, Mic, Settings, Star, Youtube, ChevronRight, FolderPlus, ChevronLeft } from 'lucide-react';
+import YouTubeCardWithModal from '../components/YoutubeCard';
 
 const Dashboard = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -66,44 +67,23 @@ const Dashboard = () => {
         </header>
         
         {/* Card grid */}
-        <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Audio card */}
-          <div className="bg-white rounded-xl p-4 shadow-sm border flex items-center justify-between">
-            <div className="flex items-center">
-              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                <Mic size={20} className="text-purple-600" />
-              </div>
-              <div className="ml-3">
-                <h3 className="font-medium">Record or upload audio</h3>
-                <p className="text-sm text-gray-500">Upload an audio file</p>
-              </div>
-            </div>
-            <ChevronRight size={20} className="text-gray-400" />
-          </div>
-          
-          {/* YouTube card */}
-          <div className="bg-white rounded-xl p-4 shadow-sm border flex items-center justify-between">
-            <div className="flex items-center">
-              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-                <Youtube size={20} className="text-red-600" />
-              </div>
-              <div className="ml-3">
-                <h3 className="font-medium">YouTube video</h3>
-                <p className="text-sm text-gray-500">Paste a YouTube link</p>
-              </div>
-            </div>
-            <ChevronRight size={20} className="text-gray-400" />
-          </div>
+
+        <YouTubeCardWithModal>
+        <div />
+        </YouTubeCardWithModal>
+
           
           {/* Document upload card */}
-          <div className="bg-white rounded-xl p-4 shadow-sm border flex items-center justify-between">
+          <div className="bg-white rounded-xl p-4 shadow-sm border flex items-center justify-between hover:scale-105 transition duration:300ms">
             <div className="flex items-center">
               <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <FileText size={20} className="text-blue-600" />
+                <Upload size={20} className="text-blue-600" />
               </div>
               <div className="ml-3">
-                <h3 className="font-medium">Document upload</h3>
-                <p className="text-sm text-gray-500">Any PDF, DOC, PPT, etc!</p>
+                <h3 className="font-medium">Upload Video</h3>
+                <p className="text-sm text-gray-500">Upload any video!</p>
               </div>
             </div>
             <ChevronRight size={20} className="text-gray-400" />
@@ -123,8 +103,8 @@ const Dashboard = () => {
           {/* Empty state */}
           <div className="flex items-center justify-center h-64 border rounded-lg">
             <div className="text-center p-6">
-              <p className="text-gray-400 mb-1">Activate Windows</p>
-              <p className="text-gray-400 text-sm">Go to Settings to activate Windows.</p>
+              <p className="text-gray-400 mb-1">notes</p>
+              <p className="text-gray-400 text-sm">notes</p>
             </div>
           </div>
         </div>
