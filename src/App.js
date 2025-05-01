@@ -2,10 +2,14 @@ import logo from './logo.svg';
 import React from "react";
 import AppRouter from './router/AppRouter';
 import "."
-
+import { TaskProvider } from './TaskContext';
 
 const App = () => {
-  return <AppRouter />;
+  return (
+    <TaskProvider>
+      <AppRouter />
+    </TaskProvider>
+  );
 };
 
 
