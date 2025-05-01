@@ -24,96 +24,96 @@ const YouTubeCardWithModal = () => {
     setError(null);
     
     // Mock response in development
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Mocking API response for development');
-      try {
-        await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
+    // if (process.env.NODE_ENV === 'development') {
+    //   console.log('Mocking API response for development');
+    //   try {
+    //     await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
         
-        // Return mock data matching the API schema
-        const mockResponse = {
-          task_id: `mock-task-${Math.random().toString(36).substring(2, 9)}`,
-          status: "processing",
-          message: "Video processing started successfully"
-        };
+    //     // Return mock data matching the API schema
+    //     const mockResponse = {
+    //       task_id: `mock-task-${Math.random().toString(36).substring(2, 9)}`,
+    //       status: "processing",
+    //       message: "Video processing started successfully"
+    //     };
         
-        return mockResponse;
-      } catch (err) {
-        setError('Mock processing failed');
-        throw err;
-      }
-    }
+    //     return mockResponse;
+    //   } catch (err) {
+    //     setError('Mock processing failed');
+    //     throw err;
+    //   }
+    // }
 
     // Real API call for production
-    // try {
-    //   const response = await fetch('http://127.0.0.1:8000/api/process-youtube', {
-    //     method: 'POST',
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //     },
-    //     body: JSON.stringify({ url }),
-    //   });
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/process-youtube', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url }),
+      });
 
-    //   if (!response.ok) {
-    //     const errorData = await response.json();
-    //     throw new Error(errorData.message || `Error: ${response.status}`);
-    //   }
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Error: ${response.status}`);
+      }
 
-    //   const data = await response.json();
+      const data = await response.json();
       
-    //   // Validate response structure
-    //   if (!data.task_id || !data.status) {
-    //     throw new Error('Invalid API response structure');
-    //   }
+      // Validate response structure
+      if (!data.task_id || !data.status) {
+        throw new Error('Invalid API response structure');
+      }
       
-    //   return data;
-    // } catch (err) {
-    //   setError(err.message || 'Failed to process YouTube video');
-    //   throw err;
-    // }
+      return data;
+    } catch (err) {
+      setError(err.message || 'Failed to process YouTube video');
+      throw err;
+    }
   };
 
   const pollStatus = async (taskId) => {
     // Mock polling in development
-    if (process.env.NODE_ENV === 'development') {
-      await new Promise(resolve => setTimeout(resolve, 3000)); // Simulate processing time
-      return {
-        status: 'completed',
-        progress: 100,
-        video_info: {
-          path: `downloads/temp/${taskId}_downloaded_video.mp4`,
-          title: `${taskId}_downloaded_video.mp4`,
-          description: "",
-          youtube_id: null
-        },
-        transcript_info: {
-          segments: [
-            { start: 0, end: 1.82, text: "Leonardo Silva Reviewer" },
-            { start: 12.36, end: 16.78, text: "I dedicated the past years to understanding how people achieve their dreams." }
-          ],
-          full_text: "00:00:00 - 00:00:01: Leonardo Silva Reviewer\n\n00:00:12 - 00:00:16: I dedicated the past years to understanding how people achieve their dreams.",
-          language: "en"
-        },
-        message: "Video processing completed successfully"
-      };
-    }
-
-    // // Real API call for production
-    // try {
-    //   const response = await fetch(`http://127.0.0.1:8000/api/status/${taskId}`);
-    //   if (!response.ok) throw new Error('Failed to fetch status');
-      
-    //   const data = await response.json();
-      
-    //   // Validate response structure
-    //   if (!data.status || !data.video_info || !data.transcript_info) {
-    //     throw new Error('Invalid status response structure');
-    //   }
-      
-    //   return data;
-    // } catch (err) {
-    //   console.error('Error polling status:', err);
-    //   throw err;
+    // if (process.env.NODE_ENV === 'development') {
+    //   await new Promise(resolve => setTimeout(resolve, 3000)); // Simulate processing time
+    //   return {
+    //     status: 'completed',
+    //     progress: 100,
+    //     video_info: {
+    //       path: `downloads/temp/${taskId}_downloaded_video.mp4`,
+    //       title: `${taskId}_downloaded_video.mp4`,
+    //       description: "",
+    //       youtube_id: null
+    //     },
+    //     transcript_info: {
+    //       segments: [
+    //         { start: 0, end: 1.82, text: "Leonardo Silva Reviewer" },
+    //         { start: 12.36, end: 16.78, text: "I dedicated the past years to understanding how people achieve their dreams." }
+    //       ],
+    //       full_text: "00:00:00 - 00:00:01: Leonardo Silva Reviewer\n\n00:00:12 - 00:00:16: I dedicated the past years to understanding how people achieve their dreams.",
+    //       language: "en"
+    //     },
+    //     message: "Video processing completed successfully"
+    //   };
     // }
+
+    // Real API call for production
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/api/status/${taskId}`);
+      if (!response.ok) throw new Error('Failed to fetch status');
+      
+      const data = await response.json();
+      
+      // Validate response structure
+      if (!data.status || !data.video_info || !data.transcript_info) {
+        throw new Error('Invalid status response structure');
+      }
+      
+      return data;
+    } catch (err) {
+      console.error('Error polling status:', err);
+      throw err;
+    }
   };
 
   const handleSubmit = async () => {
