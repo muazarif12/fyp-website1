@@ -9,7 +9,7 @@ import HighlightsReel from '../pages/highlights_reels';
 import MeetingMinutes from '../pages/meetingminutes';
 import Podcasts from '../pages/podcasts';
 import Layout from '../components/layout';
-import interactivechatbot from '../pages/interactivechatbot';
+import InteractiveChatBot from '../pages/interactivechatbot';
 
 
 
@@ -20,6 +20,7 @@ const AppRouter = () => {
         <Routes>
         <Route path="/" element={<Dashboard />} />
           <Route path="/chatbot" element={<ChatBot />} />
+          <Route path="/interactivechatbot" element={<InteractiveChatBot />} />
           <Route path="/featuregrid" element={<FeatureCardsGrid/>}/>
           <Route path="/transcript" element={<Transcript />} />
           <Route path="/podcasts" element={<Podcasts />} />

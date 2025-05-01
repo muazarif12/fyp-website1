@@ -9,6 +9,7 @@ const Layout = ({ children }) => {
   const sidebarPages = [
     '/chatbot', 
     '/interactivechatbot', 
+    '/transcript',
     '/englishdub', 
     '/englishsub', 
     '/highlights_reel', 

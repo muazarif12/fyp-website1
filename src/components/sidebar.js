@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Star,
   Menu,
+  MessageSquareCodeIcon
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -24,7 +25,7 @@ const Sidebar = () => {
   // List of pages where the sidebar should be shown
   const sidebarPages = [
     '/chatbot',
-    'interactivechatbot',
+    '/interactivechatbot',
     '/transcript',
     '/englishdub',
     '/englishsub',
@@ -42,8 +43,7 @@ const Sidebar = () => {
   // Define navigation links
   const navLinks = [
     { path: '/chatbot', icon: <MessageSquare size={20} />, label: 'Chat Bot' },
-    { path: '/interactivechatbot', icon: <MessageSquare size={20} />, label: 'Interactive Chat Bot' },
-
+    { path: '/interactivechatbot', icon: <MessageSquareCodeIcon size={20} />, label: 'Interactive Chat Bot' },
     { path: '/transcript', icon: <FileText size={20} />, label: 'Transcript' },
     { path: '/englishdub', icon: <Youtube size={20} />, label: 'English Dub' },
     { path: '/englishsub', icon: <File size={20} />, label: 'English Sub' },
