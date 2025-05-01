@@ -87,7 +87,7 @@ const LocalVideoCard = () => {
   
       // 2. Poll for completion
       const pollStatus = async () => {
-        const statusResponse = await fetch(`127.0.0.1:8000/api/status/${taskId}`);
+        const statusResponse = await fetch(`127.0.0.1:8000:api/status/${taskId}`);
         if (!statusResponse.ok) throw new Error('Failed to fetch status');
   
         const statusData = await statusResponse.json();
