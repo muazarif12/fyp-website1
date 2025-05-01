@@ -41,7 +41,7 @@ const YouTubeCardWithModal = () => {
       }
     }
 
-    // // Real API call for production
+    // Real API call for production
     // try {
     //   const response = await fetch('/api/process-youtube', {
     //     method: 'POST',
@@ -76,26 +76,42 @@ const YouTubeCardWithModal = () => {
       await new Promise(resolve => setTimeout(resolve, 3000)); // Simulate processing time
       return {
         status: 'completed',
+        progress: 100,
         video_info: {
-          title: 'Mock YouTube Video',
-          duration: '10:30',
-          thumbnail: 'https://i.ytimg.com/vi/mock-id/mqdefault.jpg'
+          path: `downloads/temp/${taskId}_downloaded_video.mp4`,
+          title: `${taskId}_downloaded_video.mp4`,
+          description: "",
+          youtube_id: null
         },
         transcript_info: {
-          text: 'This is a mock transcript of the YouTube video...',
           segments: [
-            { start: 0, end: 5, text: 'Introduction to the video' },
-            { start: 5, end: 10, text: 'Main content discussion' }
-          ]
+            { start: 0, end: 1.82, text: "Leonardo Silva Reviewer" },
+            { start: 12.36, end: 16.78, text: "I dedicated the past years to understanding how people achieve their dreams." }
+          ],
+          full_text: "00:00:00 - 00:00:01: Leonardo Silva Reviewer\n\n00:00:12 - 00:00:16: I dedicated the past years to understanding how people achieve their dreams.",
+          language: "en"
         },
-        message: 'Processing completed successfully'
+        message: "Video processing completed successfully"
       };
     }
 
     // // Real API call for production
-    // const response = await fetch(`/api/status/${taskId}`);
-    // if (!response.ok) throw new Error('Failed to fetch status');
-    // return await response.json();
+    // try {
+    //   const response = await fetch(`/api/status/${taskId}`);
+    //   if (!response.ok) throw new Error('Failed to fetch status');
+      
+    //   const data = await response.json();
+      
+    //   // Validate response structure
+    //   if (!data.status || !data.video_info || !data.transcript_info) {
+    //     throw new Error('Invalid status response structure');
+    //   }
+      
+    //   return data;
+    // } catch (err) {
+    //   console.error('Error polling status:', err);
+    //   throw err;
+    // }
   };
 
   const handleSubmit = async () => {
@@ -153,6 +169,7 @@ const YouTubeCardWithModal = () => {
           taskId,
           videoInfo: result.video_info,
           transcriptInfo: result.transcript_info,
+          progress: result.progress,
           message: result.message,
           youtubeVideo: true
         } 
