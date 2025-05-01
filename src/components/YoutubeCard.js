@@ -45,7 +45,7 @@ const YouTubeCardWithModal = () => {
 
     // Real API call for production
     // try {
-    //   const response = await fetch('/api/process-youtube', {
+    //   const response = await fetch('http://127.0.0.1:8000/api/process-youtube', {
     //     method: 'POST',
     //     headers: {
     //       'Content-Type': 'application/json',
@@ -99,7 +99,7 @@ const YouTubeCardWithModal = () => {
 
     // // Real API call for production
     // try {
-    //   const response = await fetch(`/api/status/${taskId}`);
+    //   const response = await fetch(`http://127.0.0.1:8000/api/status/${taskId}`);
     //   if (!response.ok) throw new Error('Failed to fetch status');
       
     //   const data = await response.json();
