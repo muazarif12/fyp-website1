@@ -1,22 +1,25 @@
-import { useEffect, useState } from 'react';
+// src/components/ChatBot.js
+import { useEffect, useState, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Send } from 'lucide-react';
-
+import { useTask } from '../TaskContext';
 const ChatBot = () => {
+  // Get location and task context
   const location = useLocation();
+  const { taskId } = useTask(); // Get taskId from context
+  
+  // State management
   const [youtubeLink, setYoutubeLink] = useState('');
   const [userMessage, setUserMessage] = useState('');
   const [videoTitle, setVideoTitle] = useState('A simple way to break a bad habit | Judson Brewer | TED');
   const [proMode, setProMode] = useState(false);
-    const [videoId, setVideoId] = useState('');
+  const [videoId, setVideoId] = useState('');
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const messagesEndRef = useRef(null);
 
-    const videoData = location.state;
-
-    // Then check if it's a local video
-    if (videoData?.localVideo) {
-        // Use videoData.videoUrl for displaying the video
-        
-    }
+  const videoData = location.state;
 
   // Transcript text from the example
   const transcriptText = `When I was first learning to meditate, the instruction was to simply pay attention to my breath, and when my mind wandered, to bring it back. Sounded simple enough. Yet I'd sit on these silent retreats, sweating through T-shirts in the middle of winter. I'd take naps every chance I got because it was really hard work. Actually, it was exhausting. The instruction was simple enough but I was missing something really important. So why is it so hard to pay attention? Well, studies show that even when we're really trying to pay attention to something -- like maybe this talk -- at some point, about half of us will drift off into a daydream, or have this urge to check our Twitter feed. So what's going on here? It turns out that we're fighting one of the most evolutionarily-conserved learning processes currently known in science, one that's conserved back to the most basic nervous systems known to man. This reward-based learning process is called positive and negative reinforcement, and basically goes like this. We see some food that looks good, our brain says, "Calories! ... Survival!" ...`;
@@ -27,6 +30,101 @@ const ChatBot = () => {
     "Explain reward-based learning simply.",
     "How does mindfulness break habits?"
   ];
+  
+  // Embedded chat API service functions
+  const chatApiService = {
+    /**
+     * Send a message to the chat API and get a response
+     * @param {Object} payload - The chat request payload
+     * @returns {Promise<string>} - The AI's response message
+     */
+    async sendMessage(payload) {
+      try {
+        // Ensure taskId exists
+        if (!payload.taskId) {
+          throw new Error('Task ID is required but not provided');
+        }
+  
+        // Prepare the request body based on the API schema
+        const requestBody = {
+          "type_id": "chat", // This remains as 'chat'
+          "task_id": payload.taskId, // Task ID passed from context
+          "message": payload.message, // The user's message to be sent to the chat API
+          // Commenting out optional fields for now
+          // ...(payload.videoId && { "video_id": payload.videoId }),  // Optional field: videoId, if it exists
+          // ...(payload.transcript && { "transcript": payload.transcript }),  // Optional field: transcript, if it exists
+          // ...(payload.proMode !== undefined && { "pro_mode": payload.proMode })  // Optional field: proMode, if it exists
+        };
+  
+        // Make the API call
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+        });
+  
+        if (!response.ok) {
+          throw new Error(`API call failed with status: ${response.status}`);
+        }
+  
+        const data = await response.json();
+        return data.response; // Based on the API response structure
+      } catch (error) {
+        console.error('Error calling chat API:', error);
+        throw error;
+      }
+    }
+  };
+
+  // Embedded error message component
+  const ErrorMessage = ({ message, onDismiss, duration = 5000 }) => {
+    const [visible, setVisible] = useState(true);
+  
+    useEffect(() => {
+      if (!message) return;
+      
+      const timer = setTimeout(() => {
+        setVisible(false);
+        onDismiss();
+      }, duration);
+      
+      return () => clearTimeout(timer);
+    }, [message, duration, onDismiss]);
+  
+    if (!visible || !message) return null;
+  
+    return (
+      <div className="fixed bottom-4 right-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-md max-w-md">
+        <div className="flex justify-between items-start">
+          <div className="flex-1">
+            <p className="font-medium">Error</p>
+            <p className="text-sm">{message}</p>
+          </div>
+          <button 
+            onClick={() => {
+              setVisible(false);
+              onDismiss();
+            }}
+            className="ml-4 text-red-500 hover:text-red-700"
+          >
+            ×
+          </button>
+        </div>
+      </div>
+    );
+  };
+  
+  // Function to scroll to the bottom of the messages
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // Effect to scroll to bottom when messages change
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
   
   useEffect(() => {
     // Get the YouTube link from location state
@@ -51,11 +149,64 @@ const ChatBot = () => {
       }
     }
   }, [location]);
-  const handleSendMessage = () => {
+
+  // Function to call the chat API
+  const callChatAPI = async (message) => {
+    try {
+      setLoading(true);
+      setError('');
+      
+      // Check if taskId exists
+      if (!taskId) {
+        setError('No task ID available. Please create a task first.');
+        return "Sorry, I can't process your request without an active task.";
+      }
+      
+      // Use the embedded chat API service
+      const response = await chatApiService.sendMessage({
+        message,
+        taskId, // Include the taskId from context
+        videoId, // Use state variable directly
+        transcript: transcriptText,
+        proMode // Use state variable directly
+      });
+      
+      return response;
+    } catch (error) {
+      console.error('Error calling chat API:', error);
+      setError('Failed to connect to the chat server. Please try again later.');
+      return "Sorry, I encountered an error processing your request.";
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendMessage = async () => {
     if (userMessage.trim()) {
-      // Here you would handle sending the message to your backend
-      console.log('Sending message:', userMessage);
+      // Add user message to chat
+      const newUserMessage = {
+        id: Date.now(),
+        text: userMessage,
+        sender: 'user'
+      };
+      
+      setMessages(prevMessages => [...prevMessages, newUserMessage]);
+      
+      // Store the message and clear input
+      const messageToSend = userMessage;
       setUserMessage('');
+      
+      // Call API and get response
+      const botResponse = await callChatAPI(messageToSend);
+      
+      // Add bot response to chat
+      const newBotMessage = {
+        id: Date.now() + 1,
+        text: botResponse,
+        sender: 'bot'
+      };
+      
+      setMessages(prevMessages => [...prevMessages, newBotMessage]);
     }
   };
 
@@ -67,7 +218,6 @@ const ChatBot = () => {
   };
 
   const handleSuggestedQuestion = (question) => {
-    // Set the question in the input field or directly send it
     setUserMessage(question);
   };
 
@@ -108,13 +258,50 @@ const ChatBot = () => {
         
         {/* Right panel with chat interface */}
         <div className="w-1/3 flex flex-col">
+          {/* Task status indicator */}
+          <div className={`p-2 mb-2 rounded-lg text-sm ${taskId ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+            <div className="flex items-center">
+              <div className={`w-2 h-2 rounded-full mr-2 ${taskId ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+              <p>{taskId ? `Task ID: ${taskId}` : 'No active task - Create a task first'}</p>
+            </div>
+          </div>
+          
           <div className="bg-gray-100 p-4 rounded-lg mb-4">
             <p className="text-gray-700">Ask me any question about your notes or content!</p>
           </div>
           
-          {/* Chat area (would show messages) */}
-          <div className="flex-1 mb-4 overflow-auto">
-            {/* Chat messages would be mapped here */}
+          {/* Chat area (with messages) */}
+          <div className="flex-1 mb-4 overflow-auto bg-white rounded-lg shadow-sm border p-4">
+            {messages.length === 0 ? (
+              <div className="text-center text-gray-400 italic mt-4">
+                Start a conversation by asking a question
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {messages.map((msg) => (
+                  <div 
+                    key={msg.id} 
+                    className={`${
+                      msg.sender === 'user' 
+                        ? 'bg-purple-100 ml-auto' 
+                        : 'bg-gray-100 mr-auto'
+                    } p-3 rounded-lg max-w-[80%]`}
+                  >
+                    <p className="text-gray-800">{msg.text}</p>
+                  </div>
+                ))}
+                {loading && (
+                  <div className="bg-gray-100 p-3 rounded-lg max-w-[80%] mr-auto">
+                    <div className="flex space-x-2">
+                      <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce"></div>
+                      <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce delay-100"></div>
+                      <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce delay-200"></div>
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
           </div>
           
           {/* Suggested questions */}
@@ -139,11 +326,15 @@ const ChatBot = () => {
               onKeyDown={handleKeyDown}
               placeholder="Type a question here..."
               className="w-full bg-gray-100 border-gray-200 rounded-full py-3 pl-4 pr-12 focus:outline-none"
+              disabled={loading}
             />
             <div className="absolute right-1 top-1/2 transform -translate-y-1/2 flex items-center">
               <button 
                 onClick={handleSendMessage}
-                className="bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-full"
+                className={`${
+                  loading ? 'bg-gray-400' : 'bg-purple-600 hover:bg-purple-700'
+                } text-white p-2 rounded-full`}
+                disabled={loading}
               >
                 <Send size={18} />
               </button>
@@ -168,6 +359,14 @@ const ChatBot = () => {
           </div>
         </div>
       </div>
+      
+      {/* Error message */}
+      {error && (
+        <ErrorMessage 
+          message={error} 
+          onDismiss={() => setError('')} 
+        />
+      )}
     </div>
   );
 };

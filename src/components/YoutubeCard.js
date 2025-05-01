@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Youtube, ChevronRight, X, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTask } from '../TaskContext';
 
 const YouTubeCardWithModal = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [youtubeLink, setYoutubeLink] = useState('');
+  const { setTaskId } = useTask();  // Access the setTaskId function from context
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
@@ -130,6 +132,10 @@ const YouTubeCardWithModal = () => {
       const response = await processYouTubeVideo(youtubeLink);
       const taskId = response.task_id;
       
+      // Set taskId in context
+      setTaskId(taskId);
+
+
       console.log('Processing started, task ID:', taskId);
 
       // 2. Poll for completion status
