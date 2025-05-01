@@ -9,13 +9,7 @@ const LocalVideoCard = () => {
   const [previewUrl, setPreviewUrl] = useState('');
   const fileInputRef = useRef(null);
   // In a real implementation, you'd use this:
-  // const navigate = useNavigate();
-  
-  // Mock navigate function for this example
-  const navigate = (path, params) => {
-    console.log(`Navigating to ${path} with params:`, params);
-    // In reality, this would use React Router's navigate
-  };
+  const navigate = useNavigate();
 
   const openModal = () => setIsModalOpen(true);
 
