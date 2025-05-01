@@ -70,35 +70,73 @@ const LocalVideoCard = () => {
     formData.append('file', selectedFile);
   
     try {
-      const response = await fetch('/api/upload-video', {
+      // 1. Upload the video
+      const uploadResponse = await fetch('/api/upload-video', {
         method: 'POST',
         body: formData,
       });
   
-      if (!response.ok) {
-        throw new Error('Failed to upload video');
+      if (!uploadResponse.ok) {
+        throw new Error('Video upload failed');
       }
   
-      const data = await response.json();
-      console.log('Upload response:', data);
+      const uploadData = await uploadResponse.json();
+      const taskId = uploadData.task_id;
   
-      // Navigate to chatbot or status page with task_id and video info
+      console.log('Upload complete, task ID:', taskId);
+  
+      // 2. Poll for completion
+      const pollStatus = async () => {
+        const statusResponse = await fetch(`/api/status/${taskId}`);
+        if (!statusResponse.ok) throw new Error('Failed to fetch status');
+  
+        const statusData = await statusResponse.json();
+        if (statusData.status === 'completed') {
+          return statusData;
+        } else if (statusData.status === 'failed') {
+          throw new Error('Video processing failed');
+        } else {
+          return null; // Still processing
+        }
+      };
+  
+      let result = null;
+      const maxAttempts = 10
+      const interval = 30000; // 3 seconds
+      let attempts = 0;
+  
+      while (!result && attempts < maxAttempts) {
+        result = await pollStatus();
+        if (!result) {
+          await new Promise(res => setTimeout(res, interval));
+          attempts++;
+        }
+      }
+  
+      if (!result) {
+        throw new Error('Video processing timed out. Please try again later.');
+      }
+  
+      // 3. Navigate to chatbot with the full result
       navigate('/chatbot', {
         state: {
           localVideo: true,
           videoName: fileName,
-          taskId: data.task_id, // This will be used to poll/check progress
-          status: data.status,
-          message: data.message
+          videoUrl: previewUrl,
+          taskId,
+          videoInfo: result.video_info,
+          transcriptInfo: result.transcript_info,
+          message: result.message,
         }
       });
   
       closeModal();
     } catch (error) {
-      console.error('Error uploading video:', error);
-      alert('Upload failed. Please try again.');
+      console.error('Error:', error);
+      alert(error.message || 'Something went wrong');
     }
   };
+  
   
 
   const triggerFileInput = () => {
@@ -177,7 +215,7 @@ const LocalVideoCard = () => {
                   <p className="text-gray-300 mb-1">
                     <span className="text-blue-400 font-medium">Click to upload</span> or drag and drop
                   </p>
-                  <p className="text-gray-500 text-sm">MP4, WebM, MOV, AVI (max 500MB)</p>
+                  <p className="text-gray-500 text-sm">MP4 format</p>
                 </>
               )}
             </div>

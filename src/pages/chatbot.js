@@ -14,7 +14,8 @@ const ChatBot = () => {
 
     // Then check if it's a local video
     if (videoData?.localVideo) {
-      // Use videoData.videoUrl for displaying the video
+        // Use videoData.videoUrl for displaying the video
+        
     }
 
   // Transcript text from the example
