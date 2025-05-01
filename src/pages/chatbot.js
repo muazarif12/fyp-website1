@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Send } from 'lucide-react';
 import { useTask } from '../TaskContext';
+
 const ChatBot = () => {
   // Get location and task context
   const location = useLocation();
@@ -222,14 +223,14 @@ const ChatBot = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen p-4 max-w-7xl mx-auto">
-      <div className="flex flex-1 gap-4">
-        {/* Left panel with video and transcript */}
-        <div className="w-2/3 bg-white rounded-lg shadow-sm border overflow-hidden flex flex-col">
-           {/* Video section */}
+    <div className="flex flex-col h-screen p-4 max-w-screen-2xl mx-auto">
+      <div className="flex flex-1 gap-6">
+        {/* Left panel with video */}
+        <div className="w-2/5 bg-white rounded-lg shadow-sm border overflow-hidden flex flex-col">
+          {/* Video section */}
           <div className="p-4 border-b">
             <h2 className="text-lg font-medium text-gray-800 mb-4">Your Uploaded Video</h2>
-            <div className="relative pb-9/16 h-96">
+            <div className="relative pb-9/16 h-80">
               {videoId ? (
                 <iframe 
                   className="absolute inset-0 w-full h-full"
@@ -246,18 +247,10 @@ const ChatBot = () => {
               )}
             </div>
           </div>
-          
-          {/* Transcript section */}
-          <div className="p-4 flex-1 overflow-auto">
-            <h2 className="text-lg font-medium text-gray-800 mb-4">Transcript</h2>
-            <div className="text-gray-700 text-sm">
-              <p className="leading-relaxed">{transcriptText}</p>
-            </div>
-          </div>
         </div>
         
-        {/* Right panel with chat interface */}
-        <div className="w-1/3 flex flex-col">
+        {/* Right panel with chat interface - WIDENED from 1/3 to 3/5 */}
+        <div className="w-3/5 flex flex-col">
           {/* Task status indicator */}
           <div className={`p-2 mb-2 rounded-lg text-sm ${taskId ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
             <div className="flex items-center">
@@ -270,8 +263,8 @@ const ChatBot = () => {
             <p className="text-gray-700">Ask me any question about your notes or content!</p>
           </div>
           
-          {/* Chat area (with messages) */}
-          <div className="flex-1 mb-4 overflow-auto bg-white rounded-lg shadow-sm border p-4">
+          {/* Chat area - Make taller with more space for messages */}
+          <div className="flex-1 mb-4 overflow-auto bg-white rounded-lg shadow-sm border p-4 min-h-96">
             {messages.length === 0 ? (
               <div className="text-center text-gray-400 italic mt-4">
                 Start a conversation by asking a question
@@ -285,13 +278,13 @@ const ChatBot = () => {
                       msg.sender === 'user' 
                         ? 'bg-purple-100 ml-auto' 
                         : 'bg-gray-100 mr-auto'
-                    } p-3 rounded-lg max-w-[80%]`}
+                    } p-4 rounded-lg max-w-[85%]`}
                   >
                     <p className="text-gray-800">{msg.text}</p>
                   </div>
                 ))}
                 {loading && (
-                  <div className="bg-gray-100 p-3 rounded-lg max-w-[80%] mr-auto">
+                  <div className="bg-gray-100 p-3 rounded-lg max-w-[85%] mr-auto">
                     <div className="flex space-x-2">
                       <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce"></div>
                       <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce delay-100"></div>
@@ -304,12 +297,12 @@ const ChatBot = () => {
             )}
           </div>
           
-          {/* Suggested questions */}
-          <div className="space-y-2 mb-4">
+          {/* Suggested questions in a horizontal row */}
+          <div className="flex flex-wrap gap-2 mb-4">
             {suggestedQuestions.map((question, index) => (
               <button
                 key={index}
-                className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-4 rounded-lg text-sm text-left"
+                className="bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-4 rounded-lg text-sm flex-grow"
                 onClick={() => handleSuggestedQuestion(question)}
               >
                 {question}
@@ -317,7 +310,7 @@ const ChatBot = () => {
             ))}
           </div>
           
-          {/* Input area */}
+          {/* Improved input area */}
           <div className="relative">
             <input
               type="text"
@@ -325,34 +318,36 @@ const ChatBot = () => {
               onChange={(e) => setUserMessage(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Type a question here..."
-              className="w-full bg-gray-100 border-gray-200 rounded-full py-3 pl-4 pr-12 focus:outline-none"
+              className="w-full bg-gray-100 border-gray-200 rounded-full py-3 pl-6 pr-14 focus:outline-none focus:ring-2 focus:ring-purple-500 text-base"
               disabled={loading}
             />
-            <div className="absolute right-1 top-1/2 transform -translate-y-1/2 flex items-center">
+            <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
               <button 
                 onClick={handleSendMessage}
                 className={`${
                   loading ? 'bg-gray-400' : 'bg-purple-600 hover:bg-purple-700'
-                } text-white p-2 rounded-full`}
+                } text-white p-3 rounded-full transition-colors`}
                 disabled={loading}
               >
-                <Send size={18} />
+                <Send size={20} />
               </button>
             </div>
           </div>
           
-          {/* Pro mode toggle */}
-          <div className="mt-4 flex items-center">
-            <input
-              type="checkbox"
-              id="proMode"
-              checked={proMode}
-              onChange={() => setProMode(!proMode)}
-              className="mr-2"
-            />
-            <label htmlFor="proMode" className="text-gray-700 text-sm">Pro Mode</label>
+          {/* Pro mode toggle with improved layout */}
+          <div className="mt-4 flex items-center justify-between">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="proMode"
+                checked={proMode}
+                onChange={() => setProMode(!proMode)}
+                className="mr-2 h-4 w-4 text-purple-600 rounded"
+              />
+              <label htmlFor="proMode" className="text-gray-700">Pro Mode</label>
+            </div>
             
-            <div className="ml-auto text-gray-400 text-xs">
+            <div className="text-gray-400 text-xs text-right">
               Activate Windows
               <div className="text-xs text-gray-300">Go to Settings to activate Windows</div>
             </div>
