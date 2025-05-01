@@ -71,7 +71,7 @@ const LocalVideoCard = () => {
   
     try {
       // 1. Upload the video
-      const uploadResponse = await fetch('/api/upload-video', {
+      const uploadResponse = await fetch('http://127.0.0.1:8000/api/upload-video', {
         method: 'POST',
         body: formData,
       });
@@ -87,11 +87,11 @@ const LocalVideoCard = () => {
   
       // 2. Poll for completion
       const pollStatus = async () => {
-        const statusResponse = await fetch(`/api/status/${taskId}`);
+        const statusResponse = await fetch(`http://127.0.0.1:8000/api/status/${taskId}`);
         if (!statusResponse.ok) throw new Error('Failed to fetch status');
   
         const statusData = await statusResponse.json();
-        if (statusData.status === 'completed') {
+        if (statusData.status === 'transcribing') {
           return statusData;
         } else if (statusData.status === 'failed') {
           throw new Error('Video processing failed');
