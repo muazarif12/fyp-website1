@@ -30,7 +30,7 @@ const YouTubeCardWithModal = () => {
         // Return mock data matching the API schema
         const mockResponse = {
           task_id: `mock-task-${Math.random().toString(36).substring(2, 9)}`,
-          status: "25%", // Example status percentage
+          status: "processing",
           message: "Video processing started successfully"
         };
         
@@ -38,8 +38,6 @@ const YouTubeCardWithModal = () => {
       } catch (err) {
         setError('Mock processing failed');
         throw err;
-      } finally {
-        setIsLoading(false);
       }
     }
 
@@ -69,9 +67,35 @@ const YouTubeCardWithModal = () => {
     // } catch (err) {
     //   setError(err.message || 'Failed to process YouTube video');
     //   throw err;
-    // } finally {
-    //   setIsLoading(false);
     // }
+  };
+
+  const pollStatus = async (taskId) => {
+    // Mock polling in development
+    if (process.env.NODE_ENV === 'development') {
+      await new Promise(resolve => setTimeout(resolve, 3000)); // Simulate processing time
+      return {
+        status: 'completed',
+        video_info: {
+          title: 'Mock YouTube Video',
+          duration: '10:30',
+          thumbnail: 'https://i.ytimg.com/vi/mock-id/mqdefault.jpg'
+        },
+        transcript_info: {
+          text: 'This is a mock transcript of the YouTube video...',
+          segments: [
+            { start: 0, end: 5, text: 'Introduction to the video' },
+            { start: 5, end: 10, text: 'Main content discussion' }
+          ]
+        },
+        message: 'Processing completed successfully'
+      };
+    }
+
+    // // Real API call for production
+    // const response = await fetch(`/api/status/${taskId}`);
+    // if (!response.ok) throw new Error('Failed to fetch status');
+    // return await response.json();
   };
 
   const handleSubmit = async () => {
@@ -86,21 +110,60 @@ const YouTubeCardWithModal = () => {
         throw new Error('Please enter a valid YouTube URL');
       }
 
+      // 1. Start processing the video
       const response = await processYouTubeVideo(youtubeLink);
-      closeModal();
+      const taskId = response.task_id;
       
-      // Navigate with all response data
+      console.log('Processing started, task ID:', taskId);
+
+      // 2. Poll for completion status
+      let result = null;
+      const maxAttempts = 10;
+      const interval = 3000; // 3 seconds
+      let attempts = 0;
+
+      while (!result && attempts < maxAttempts) {
+        try {
+          const status = await pollStatus(taskId);
+          
+          if (status.status === 'completed') {
+            result = status;
+          } else if (status.status === 'failed') {
+            throw new Error('Video processing failed');
+          } else {
+            // Still processing
+            await new Promise(resolve => setTimeout(resolve, interval));
+            attempts++;
+          }
+        } catch (err) {
+          console.error('Polling error:', err);
+          attempts++;
+          if (attempts >= maxAttempts) throw err;
+        }
+      }
+
+      if (!result) {
+        throw new Error('Video processing timed out. Please try again later.');
+      }
+
+      // 3. Navigate to chatbot with all the results
       navigate('/chatbot', { 
         state: { 
           youtubeLink,
-          taskId: response.task_id,
-          initialStatus: response.status,
-          message: response.message
+          taskId,
+          videoInfo: result.video_info,
+          transcriptInfo: result.transcript_info,
+          message: result.message,
+          youtubeVideo: true
         } 
       });
+
+      closeModal();
     } catch (err) {
-      console.error('API Error:', err);
-      // Error is already set by processYouTubeVideo
+      console.error('Error:', err);
+      setError(err.message || 'Something went wrong');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -172,8 +235,14 @@ const YouTubeCardWithModal = () => {
               {/* Generate Notes button */}
               <button
                 onClick={handleSubmit}
-                disabled={isLoading}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-lg transition flex items-center justify-center gap-2 disabled:opacity-70"
+                disabled={isLoading || !youtubeLink}
+                className={`w-full font-medium py-3 px-4 rounded-lg transition flex items-center justify-center gap-2 ${
+                  isLoading 
+                    ? 'bg-purple-700 text-white' 
+                    : youtubeLink 
+                      ? 'bg-purple-600 hover:bg-purple-700 text-white' 
+                      : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                }`}
               >
                 {isLoading ? (
                   <>
