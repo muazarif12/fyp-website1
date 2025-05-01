@@ -17,68 +17,62 @@ const YouTubeCardWithModal = () => {
     setError(null);
   };
 
-  // use this with backend
-
   const processYouTubeVideo = async (url) => {
     setIsLoading(true);
     setError(null);
     
-    try {
-      const response = await fetch('/api/process-youtube', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ url }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status}`);
+    // Mock response in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Mocking API response for development');
+      try {
+        await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
+        
+        // Return mock data matching the API schema
+        const mockResponse = {
+          task_id: `mock-task-${Math.random().toString(36).substring(2, 9)}`,
+          status: "25%", // Example status percentage
+          message: "Video processing started successfully"
+        };
+        
+        return mockResponse;
+      } catch (err) {
+        setError('Mock processing failed');
+        throw err;
+      } finally {
+        setIsLoading(false);
       }
-
-      const data = await response.json();
-      return data.taskId; // Assuming the API returns a task ID
-    } catch (err) {
-      setError(err.message || 'Failed to process YouTube video');
-      throw err;
-    } finally {
-      setIsLoading(false);
     }
+
+    // // Real API call for production
+    // try {
+    //   const response = await fetch('/api/process-youtube', {
+    //     method: 'POST',
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //     },
+    //     body: JSON.stringify({ url }),
+    //   });
+
+    //   if (!response.ok) {
+    //     const errorData = await response.json();
+    //     throw new Error(errorData.message || `Error: ${response.status}`);
+    //   }
+
+    //   const data = await response.json();
+      
+    //   // Validate response structure
+    //   if (!data.task_id || !data.status) {
+    //     throw new Error('Invalid API response structure');
+    //   }
+      
+    //   return data;
+    // } catch (err) {
+    //   setError(err.message || 'Failed to process YouTube video');
+    //   throw err;
+    // } finally {
+    //   setIsLoading(false);
+    // }
   };
-
-//// mocking the API response
-// const processYouTubeVideo = async (url) => {
-//   setIsLoading(true);
-//   setError(null);
-  
-//   // Mock response in development
-//   if (process.env.NODE_ENV === 'development') {
-//     console.log('Mocking API response for development');
-//     await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
-//     return { taskId: 'mock-task-id-123' }; // Return mock data
-//   }
-
-//   // Real API call for production
-//   try {
-//     const response = await fetch('/api/process-youtube', {
-//       method: 'POST',
-//       headers: {
-//         'Content-Type': 'application/json',
-//       },
-//       body: JSON.stringify({ url }),
-//     });
-
-//     if (!response.ok) throw new Error(`Error: ${response.status}`);
-//     return await response.json();
-//   } catch (err) {
-//     setError(err.message || 'Failed to process YouTube video');
-//     throw err;
-//   } finally {
-//     setIsLoading(false);
-//   }
-// };
-
-/////
 
   const handleSubmit = async () => {
     if (!youtubeLink) {
@@ -87,18 +81,26 @@ const YouTubeCardWithModal = () => {
     }
 
     try {
-      const taskId = await processYouTubeVideo(youtubeLink);
+      // Validate YouTube URL format
+      if (!youtubeLink.match(/^(https?\:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/)) {
+        throw new Error('Please enter a valid YouTube URL');
+      }
+
+      const response = await processYouTubeVideo(youtubeLink);
       closeModal();
-      // Navigate to chatbot with both the link and task ID
+      
+      // Navigate with all response data
       navigate('/chatbot', { 
         state: { 
           youtubeLink,
-          taskId // You can use this to check processing status
+          taskId: response.task_id,
+          initialStatus: response.status,
+          message: response.message
         } 
       });
     } catch (err) {
-      // Error is already set by processYouTubeVideo
       console.error('API Error:', err);
+      // Error is already set by processYouTubeVideo
     }
   };
 
