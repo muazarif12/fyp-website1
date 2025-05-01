@@ -19,64 +19,64 @@ const YouTubeCardWithModal = () => {
 
   // use this with backend
 
-  // const processYouTubeVideo = async (url) => {
-  //   setIsLoading(true);
-  //   setError(null);
+  const processYouTubeVideo = async (url) => {
+    setIsLoading(true);
+    setError(null);
     
-  //   try {
-  //     const response = await fetch('/api/process-youtube', {
-  //       method: 'POST',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //       },
-  //       body: JSON.stringify({ url }),
-  //     });
+    try {
+      const response = await fetch('/api/process-youtube', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url }),
+      });
 
-  //     if (!response.ok) {
-  //       throw new Error(`Error: ${response.status}`);
-  //     }
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status}`);
+      }
 
-  //     const data = await response.json();
-  //     return data.taskId; // Assuming the API returns a task ID
-  //   } catch (err) {
-  //     setError(err.message || 'Failed to process YouTube video');
-  //     throw err;
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
+      const data = await response.json();
+      return data.taskId; // Assuming the API returns a task ID
+    } catch (err) {
+      setError(err.message || 'Failed to process YouTube video');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
 //// mocking the API response
-const processYouTubeVideo = async (url) => {
-  setIsLoading(true);
-  setError(null);
+// const processYouTubeVideo = async (url) => {
+//   setIsLoading(true);
+//   setError(null);
   
-  // Mock response in development
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Mocking API response for development');
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
-    return { taskId: 'mock-task-id-123' }; // Return mock data
-  }
+//   // Mock response in development
+//   if (process.env.NODE_ENV === 'development') {
+//     console.log('Mocking API response for development');
+//     await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
+//     return { taskId: 'mock-task-id-123' }; // Return mock data
+//   }
 
-  // Real API call for production
-  try {
-    const response = await fetch('/api/process-youtube', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ url }),
-    });
+//   // Real API call for production
+//   try {
+//     const response = await fetch('/api/process-youtube', {
+//       method: 'POST',
+//       headers: {
+//         'Content-Type': 'application/json',
+//       },
+//       body: JSON.stringify({ url }),
+//     });
 
-    if (!response.ok) throw new Error(`Error: ${response.status}`);
-    return await response.json();
-  } catch (err) {
-    setError(err.message || 'Failed to process YouTube video');
-    throw err;
-  } finally {
-    setIsLoading(false);
-  }
-};
+//     if (!response.ok) throw new Error(`Error: ${response.status}`);
+//     return await response.json();
+//   } catch (err) {
+//     setError(err.message || 'Failed to process YouTube video');
+//     throw err;
+//   } finally {
+//     setIsLoading(false);
+//   }
+// };
 
 /////
 

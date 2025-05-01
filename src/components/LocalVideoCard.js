@@ -60,32 +60,46 @@ const LocalVideoCard = () => {
     }
   };
 
-  const handleSubmit = () => {
-    if (selectedFile) {
-      console.log('File selected:', selectedFile);
-      
-      // In a real app, you might want to:
-      // 1. Upload the file to a server
-      // 2. Process the video
-      // 3. Navigate to the next page with the video info
-      
-      navigate('/chatbot', { 
-        state: { 
+  const handleSubmit = async () => {
+    if (!selectedFile) {
+      alert('Please select a video file first');
+      return;
+    }
+  
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+  
+    try {
+      const response = await fetch('/api/upload-video', {
+        method: 'POST',
+        body: formData,
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to upload video');
+      }
+  
+      const data = await response.json();
+      console.log('Upload response:', data);
+  
+      // Navigate to chatbot or status page with task_id and video info
+      navigate('/chatbot', {
+        state: {
           localVideo: true,
           videoName: fileName,
-          // For a real implementation, you would either:
-          // - Send the file to a server and pass the URL
-          // - Use the File System Access API if supported
-          // - Use the previewUrl (but this will only last for the current session)
-          videoUrl: previewUrl
-        } 
+          taskId: data.task_id, // This will be used to poll/check progress
+          status: data.status,
+          message: data.message
+        }
       });
-      
+  
       closeModal();
-    } else {
-      alert('Please select a video file first');
+    } catch (error) {
+      console.error('Error uploading video:', error);
+      alert('Upload failed. Please try again.');
     }
   };
+  
 
   const triggerFileInput = () => {
     fileInputRef.current.click();
