@@ -10,6 +10,13 @@ const ChatBot = () => {
   const [proMode, setProMode] = useState(false);
     const [videoId, setVideoId] = useState('');
 
+    const videoData = location.state;
+
+    // Then check if it's a local video
+    if (videoData?.localVideo) {
+      // Use videoData.videoUrl for displaying the video
+    }
+
   // Transcript text from the example
   const transcriptText = `When I was first learning to meditate, the instruction was to simply pay attention to my breath, and when my mind wandered, to bring it back. Sounded simple enough. Yet I'd sit on these silent retreats, sweating through T-shirts in the middle of winter. I'd take naps every chance I got because it was really hard work. Actually, it was exhausting. The instruction was simple enough but I was missing something really important. So why is it so hard to pay attention? Well, studies show that even when we're really trying to pay attention to something -- like maybe this talk -- at some point, about half of us will drift off into a daydream, or have this urge to check our Twitter feed. So what's going on here? It turns out that we're fighting one of the most evolutionarily-conserved learning processes currently known in science, one that's conserved back to the most basic nervous systems known to man. This reward-based learning process is called positive and negative reinforcement, and basically goes like this. We see some food that looks good, our brain says, "Calories! ... Survival!" ...`;
   

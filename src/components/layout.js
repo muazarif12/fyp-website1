@@ -8,7 +8,7 @@ const Layout = ({ children }) => {
   // List of pages where the sidebar should be shown
   const sidebarPages = [
     '/chatbot', 
-    '/transcript', 
+    '/interactivechatbot', 
     '/englishdub', 
     '/englishsub', 
     '/highlights_reel', 

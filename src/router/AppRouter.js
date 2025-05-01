@@ -9,6 +9,8 @@ import HighlightsReel from '../pages/highlights_reels';
 import MeetingMinutes from '../pages/meetingminutes';
 import Podcasts from '../pages/podcasts';
 import Layout from '../components/layout';
+import interactivechatbot from '../pages/interactivechatbot';
+
 
 
 const AppRouter = () => {
