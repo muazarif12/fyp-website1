@@ -12,7 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Star,
-  Menu
+  Menu,
 } from 'lucide-react';
 
 const Sidebar = () => {

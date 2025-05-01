@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Upload, Home, Mic, Settings, Star, Youtube, ChevronRight, FolderPlus, ChevronLeft, Menu } from 'lucide-react';
 import YouTubeCardWithModal from '../components/YoutubeCard';
+import LocalVideoCard from '../components/LocalVideoCard';
 
 const Dashboard = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -91,20 +92,11 @@ const Dashboard = () => {
           <YouTubeCardWithModal>
             <div />
           </YouTubeCardWithModal>
+          <LocalVideoCard>
+            <div />
+          </LocalVideoCard>
           
-          {/* Document upload card */}
-          <div className="bg-white rounded-xl p-4 shadow-sm border flex items-center justify-between hover:scale-105 transition duration-300">
-            <div className="flex items-center">
-              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                <Upload size={20} className="text-blue-600" />
-              </div>
-              <div className="ml-3">
-                <h3 className="font-medium">Upload Video</h3>
-                <p className="text-sm text-gray-500">Upload any video!</p>
-              </div>
-            </div>
-            <ChevronRight size={20} className="text-gray-400" />
-          </div>
+          
         </div>
         
         {/* Notes section */}

@@ -8,7 +8,8 @@ const ChatBot = () => {
   const [userMessage, setUserMessage] = useState('');
   const [videoTitle, setVideoTitle] = useState('A simple way to break a bad habit | Judson Brewer | TED');
   const [proMode, setProMode] = useState(false);
-  
+    const [videoId, setVideoId] = useState('');
+
   // Transcript text from the example
   const transcriptText = `When I was first learning to meditate, the instruction was to simply pay attention to my breath, and when my mind wandered, to bring it back. Sounded simple enough. Yet I'd sit on these silent retreats, sweating through T-shirts in the middle of winter. I'd take naps every chance I got because it was really hard work. Actually, it was exhausting. The instruction was simple enough but I was missing something really important. So why is it so hard to pay attention? Well, studies show that even when we're really trying to pay attention to something -- like maybe this talk -- at some point, about half of us will drift off into a daydream, or have this urge to check our Twitter feed. So what's going on here? It turns out that we're fighting one of the most evolutionarily-conserved learning processes currently known in science, one that's conserved back to the most basic nervous systems known to man. This reward-based learning process is called positive and negative reinforcement, and basically goes like this. We see some food that looks good, our brain says, "Calories! ... Survival!" ...`;
   
@@ -20,13 +21,28 @@ const ChatBot = () => {
   ];
   
   useEffect(() => {
-    // Get the YouTube link from location state if available
-    if (location.state && location.state.youtubeLink) {
-      setYoutubeLink(location.state.youtubeLink);
-      // You would typically extract video title from the link or API here
+    // Get the YouTube link from location state
+    const linkFromState = location.state?.youtubeLink;
+    
+    if (linkFromState) {
+      setYoutubeLink(linkFromState);
+      
+      // Extract video ID from YouTube link
+      const extractVideoId = (url) => {
+        // Handle different YouTube URL formats
+        const regExp = /^.*(youtu.be\/|v\/|e\/|u\/\w+\/|embed\/|v=)([^#\&\?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[2].length === 11) ? match[2] : null;
+      };
+      
+      const id = extractVideoId(linkFromState);
+      if (id) {
+        setVideoId(id);
+      } else {
+        console.error('Invalid YouTube URL');
+      }
     }
   }, [location]);
-
   const handleSendMessage = () => {
     if (userMessage.trim()) {
       // Here you would handle sending the message to your backend
@@ -52,18 +68,24 @@ const ChatBot = () => {
       <div className="flex flex-1 gap-4">
         {/* Left panel with video and transcript */}
         <div className="w-2/3 bg-white rounded-lg shadow-sm border overflow-hidden flex flex-col">
-          {/* Video section */}
+           {/* Video section */}
           <div className="p-4 border-b">
             <h2 className="text-lg font-medium text-gray-800 mb-4">Your Uploaded Video</h2>
             <div className="relative pb-9/16 h-96">
-              <iframe 
-                className="absolute inset-0 w-full h-full"
-                src="https://www.youtube.com/embed/ADuSln1_Jq0"
-                title="YouTube video player"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              ></iframe>
+              {videoId ? (
+                <iframe 
+                  className="absolute inset-0 w-full h-full"
+                  src={`https://www.youtube.com/embed/${videoId}`}
+                  title="YouTube video player"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+              ) : (
+                <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gray-100 text-gray-500">
+                  No video loaded or invalid YouTube URL
+                </div>
+              )}
             </div>
           </div>
           
