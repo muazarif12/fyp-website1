@@ -3,12 +3,26 @@ import { Youtube, ChevronRight, X, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTask } from '../TaskContext';
 
+// Define API base URL - can be moved to environment variables
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://127.0.0.1:8000';
+
+// More comprehensive YouTube URL validation
+const isValidYouTubeUrl = (url) => {
+  const patterns = [
+    /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/,
+    /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[a-zA-Z0-9_-]{11}$/,
+    /^(https?:\/\/)?(www\.)?(youtube\.com\/shorts\/)[a-zA-Z0-9_-]{11}$/
+  ];
+  return patterns.some(pattern => pattern.test(url));
+};
+
 const YouTubeCardWithModal = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [youtubeLink, setYoutubeLink] = useState('');
   const { setTaskId } = useTask();  // Access the setTaskId function from context
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [progress, setProgress] = useState(0);
   const navigate = useNavigate();
 
   const openModal = () => setIsModalOpen(true);
@@ -17,35 +31,15 @@ const YouTubeCardWithModal = () => {
     setIsModalOpen(false);
     setYoutubeLink('');
     setError(null);
+    setProgress(0);
   };
 
   const processYouTubeVideo = async (url) => {
     setIsLoading(true);
     setError(null);
     
-    // Mock response in development
-    // if (process.env.NODE_ENV === 'development') {
-    //   console.log('Mocking API response for development');
-    //   try {
-    //     await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
-        
-    //     // Return mock data matching the API schema
-    //     const mockResponse = {
-    //       task_id: `mock-task-${Math.random().toString(36).substring(2, 9)}`,
-    //       status: "processing",
-    //       message: "Video processing started successfully"
-    //     };
-        
-    //     return mockResponse;
-    //   } catch (err) {
-    //     setError('Mock processing failed');
-    //     throw err;
-    //   }
-    // }
-
-    // Real API call for production
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/process-youtube', {
+      const response = await fetch(`${API_BASE_URL}/api/process-youtube`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -55,58 +49,51 @@ const YouTubeCardWithModal = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || `Error: ${response.status}`);
+        throw new Error(errorData.message || `Server error: ${response.status}`);
       }
 
       const data = await response.json();
       
       // Validate response structure
-      if (!data.task_id || !data.status) {
-        throw new Error('Invalid API response structure');
+      if (!data.task_id) {
+        throw new Error('Invalid response: missing task ID');
+      }
+      if (!data.status) {
+        throw new Error('Invalid response: missing status');
       }
       
       return data;
     } catch (err) {
+      console.error('Error processing video:', err);
       setError(err.message || 'Failed to process YouTube video');
       throw err;
     }
   };
 
   const pollStatus = async (taskId) => {
-    // Mock polling in development
-    // if (process.env.NODE_ENV === 'development') {
-    //   await new Promise(resolve => setTimeout(resolve, 3000)); // Simulate processing time
-    //   return {
-    //     status: 'completed',
-    //     progress: 100,
-    //     video_info: {
-    //       path: `downloads/temp/${taskId}_downloaded_video.mp4`,
-    //       title: `${taskId}_downloaded_video.mp4`,
-    //       description: "",
-    //       youtube_id: null
-    //     },
-    //     transcript_info: {
-    //       segments: [
-    //         { start: 0, end: 1.82, text: "Leonardo Silva Reviewer" },
-    //         { start: 12.36, end: 16.78, text: "I dedicated the past years to understanding how people achieve their dreams." }
-    //       ],
-    //       full_text: "00:00:00 - 00:00:01: Leonardo Silva Reviewer\n\n00:00:12 - 00:00:16: I dedicated the past years to understanding how people achieve their dreams.",
-    //       language: "en"
-    //     },
-    //     message: "Video processing completed successfully"
-    //   };
-    // }
-
-    // Real API call for production
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/status/${taskId}`);
-      if (!response.ok) throw new Error('Failed to fetch status');
+      const response = await fetch(`${API_BASE_URL}/api/status/${taskId}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Status check failed: ${response.status}`);
+      }
       
       const data = await response.json();
       
-      // Validate response structure
-      if (!data.status || !data.video_info || !data.transcript_info) {
-        throw new Error('Invalid status response structure');
+      // Update progress if available
+      if (data.progress) {
+        setProgress(data.progress);
+      }
+      
+      // Only validate that status field exists - other fields may not exist until processing completes
+      if (!data.status) {
+        throw new Error('Invalid status response: missing status');
+      }
+      
+      // Only validate video_info and transcript_info when status is completed
+      if (data.status === 'completed' && (!data.video_info || !data.transcript_info)) {
+        throw new Error('Invalid complete response: missing video or transcript info');
       }
       
       return data;
@@ -114,6 +101,46 @@ const YouTubeCardWithModal = () => {
       console.error('Error polling status:', err);
       throw err;
     }
+  };
+
+  // Implements exponential backoff for polling
+  const pollWithBackoff = async (taskId, maxAttempts = 10, initialInterval = 1000) => {
+    let attempts = 0;
+    let interval = initialInterval;
+    let result = null;
+
+    while (!result && attempts < maxAttempts) {
+      try {
+        const status = await pollStatus(taskId);
+        
+        if (status.status === 'completed') {
+          // Additional check to make sure we have all required data
+          if (!status.video_info || !status.transcript_info) {
+            console.error('Response marked as completed but missing required data', status);
+            throw new Error('Server returned incomplete data. Please try again.');
+          }
+          return status;
+        } else if (status.status === 'failed') {
+          throw new Error(status.message || 'Video processing failed');
+        } else {
+          // Still processing, wait and try again
+          await new Promise(resolve => setTimeout(resolve, interval));
+          // Increase interval with each attempt (exponential backoff)
+          interval = Math.min(interval * 1.5, 10000); // Cap at 10 seconds
+          attempts++;
+        }
+      } catch (err) {
+        console.error('Polling error:', err);
+        attempts++;
+        if (attempts >= maxAttempts) throw err;
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, interval));
+        // Increase interval with each failed attempt
+        interval = Math.min(interval * 2, 10000); // Cap at 10 seconds
+      }
+    }
+
+    throw new Error('Video processing timed out. Please try again later.');
   };
 
   const handleSubmit = async () => {
@@ -124,7 +151,7 @@ const YouTubeCardWithModal = () => {
 
     try {
       // Validate YouTube URL format
-      if (!youtubeLink.match(/^(https?\:\/\/)?(www\.)?(youtube\.com|youtu\.?be)\/.+$/)) {
+      if (!isValidYouTubeUrl(youtubeLink)) {
         throw new Error('Please enter a valid YouTube URL');
       }
 
@@ -134,39 +161,10 @@ const YouTubeCardWithModal = () => {
       
       // Set taskId in context
       setTaskId(taskId);
-
-
       console.log('Processing started, task ID:', taskId);
 
-      // 2. Poll for completion status
-      let result = null;
-      const maxAttempts = 10;
-      const interval = 3000; // 3 seconds
-      let attempts = 0;
-
-      while (!result && attempts < maxAttempts) {
-        try {
-          const status = await pollStatus(taskId);
-          
-          if (status.status === 'completed') {
-            result = status;
-          } else if (status.status === 'failed') {
-            throw new Error('Video processing failed');
-          } else {
-            // Still processing
-            await new Promise(resolve => setTimeout(resolve, interval));
-            attempts++;
-          }
-        } catch (err) {
-          console.error('Polling error:', err);
-          attempts++;
-          if (attempts >= maxAttempts) throw err;
-        }
-      }
-
-      if (!result) {
-        throw new Error('Video processing timed out. Please try again later.');
-      }
+      // 2. Poll for completion status with exponential backoff
+      const result = await pollWithBackoff(taskId);
 
       // 3. Navigate to chatbot with all the results
       navigate('/chatbot', { 
@@ -255,6 +253,16 @@ const YouTubeCardWithModal = () => {
                 <p className="text-red-500 text-sm mb-4">{error}</p>
               )}
               
+              {/* Progress indicator (when processing) */}
+              {isLoading && progress > 0 && (
+                <div className="w-full bg-gray-700 rounded-full h-2 mb-4">
+                  <div 
+                    className="bg-purple-500 h-2 rounded-full" 
+                    style={{ width: `${progress}%` }}
+                  ></div>
+                </div>
+              )}
+              
               {/* Generate Notes button */}
               <button
                 onClick={handleSubmit}
@@ -270,7 +278,7 @@ const YouTubeCardWithModal = () => {
                 {isLoading ? (
                   <>
                     <Loader2 className="animate-spin" size={20} />
-                    Processing...
+                    {progress > 0 ? `Processing... ${progress}%` : 'Processing...'}
                   </>
                 ) : (
                   'Generate Notes'
