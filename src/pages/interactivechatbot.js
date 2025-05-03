@@ -1,144 +1,244 @@
-import { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
-import { Send } from 'lucide-react';
+// src/components/InteractiveChatBot.jsx
+import React, { useState, useEffect, useRef } from "react";
+import { Send } from "lucide-react";
+import { useTask } from "../TaskContext";       // ← pull taskId (and title) from context
 
-const InteractiveChatBot = () => {
-  const location = useLocation();
-  const [youtubeLink, setYoutubeLink] = useState('');
-  const [userMessage, setUserMessage] = useState('');
-  const [videoTitle, setVideoTitle] = useState('A simple way to break a bad habit | Judson Brewer | TED');
+const API_BASE = "http://localhost:8000";
+
+export default function InteractiveChatBot() {
+  // grab our TaskContext
+  const { taskId, videoTitle } = useTask();
+
+  const [userMessage, setUserMessage] = useState("");
+  const [messages, setMessages] = useState([]); // { id, sender, text, timestamps, clipUrl, clipTitle }
+  const [loading, setLoading] = useState(false);
   const [proMode, setProMode] = useState(false);
-    const [videoId, setVideoId] = useState('');
+  const [error, setError] = useState("");
+  const endRef = useRef(null);
 
-    const videoData = location.state;
-
-    // Then check if it's a local video
-    if (videoData?.localVideo) {
-      // Use videoData.videoUrl for displaying the video
-    }
-
-  // Transcript text from the example
-  const transcriptText = `When I was first learning to meditate, the instruction was to simply pay attention to my breath, and when my mind wandered, to bring it back. Sounded simple enough. Yet I'd sit on these silent retreats, sweating through T-shirts in the middle of winter. I'd take naps every chance I got because it was really hard work. Actually, it was exhausting. The instruction was simple enough but I was missing something really important. So why is it so hard to pay attention? Well, studies show that even when we're really trying to pay attention to something -- like maybe this talk -- at some point, about half of us will drift off into a daydream, or have this urge to check our Twitter feed. So what's going on here? It turns out that we're fighting one of the most evolutionarily-conserved learning processes currently known in science, one that's conserved back to the most basic nervous systems known to man. This reward-based learning process is called positive and negative reinforcement, and basically goes like this. We see some food that looks good, our brain says, "Calories! ... Survival!" ...`;
-  
-  // Suggested questions based on the example
-  const suggestedQuestions = [
-    "Can you summarize the key ideas?",
-    "Explain reward-based learning simply.",
-    "How does mindfulness break habits?"
-  ];
-  
+  // auto-scroll on new message
   useEffect(() => {
-    // Get the YouTube link from location state
-    const linkFromState = location.state?.youtubeLink;
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // helper to call our interactive-qa API
+  async function askQuestion(text) {
+    if (!taskId) {
+      throw new Error("No task ID available — please upload/process a video first.");
+    }
+
+    // 1) POST to create a QA task
+    const post = await fetch(`${API_BASE}/api/interactive-qa`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        task_id: taskId,
+        question: text,
+        generate_clip: proMode,
+      }),
+    });
+    if (!post.ok) {
+      const e = await post.json().catch(() => ({}));
+      throw new Error(e.detail || `HTTP ${post.status}`);
+    }
+    const { qa_task_id } = await post.json();
+
+    // 2) poll status
+    let status = "";
+    while (status !== "completed") {
+      const stat = await fetch(
+        `${API_BASE}/api/interactive-qa/status/${qa_task_id}`
+      ).then((r) => r.json());
+      status = stat.status;
+      if (status === "failed") throw new Error("Q&A processing failed");
+      if (status !== "completed") await new Promise((r) => setTimeout(r, 2000));
+    }
+
+    // 3) fetch result
+    const result = await fetch(
+      `${API_BASE}/api/interactive-qa/result/${qa_task_id}`
+    );
+    if (!result.ok) throw new Error(`HTTP ${result.status}`);
+    return result.json();
+  }
+
+  const handleSend = async () => {
+    const text = userMessage.trim();
+    if (!text) return;
+
+    // add user bubble
+    setMessages((m) => [
+      ...m,
+      { id: Date.now(), sender: "user", text },
+    ]);
+    setUserMessage("");
+    setError("");
+    setLoading(true);
     
-    if (linkFromState) {
-      setYoutubeLink(linkFromState);
-      
-      // Extract video ID from YouTube link
-      const extractVideoId = (url) => {
-        // Handle different YouTube URL formats
-        const regExp = /^.*(youtu.be\/|v\/|e\/|u\/\w+\/|embed\/|v=)([^#\&\?]*).*/;
-        const match = url.match(regExp);
-        return (match && match[2].length === 11) ? match[2] : null;
-      };
-      
-      const id = extractVideoId(linkFromState);
-      if (id) {
-        setVideoId(id);
-      } else {
-        console.error('Invalid YouTube URL');
-      }
-    }
-  }, [location]);
-  const handleSendMessage = () => {
-    if (userMessage.trim()) {
-      // Here you would handle sending the message to your backend
-      console.log('Sending message:', userMessage);
-      setUserMessage('');
+    // Add a temporary loading message from the bot
+    const loadingMsgId = Date.now() + 1;
+    setMessages((m) => [
+      ...m,
+      {
+        id: loadingMsgId,
+        sender: "bot",
+        text: "",
+        loading: true,
+      },
+    ]);
+
+    try {
+      const { answer, timestamps, clip_url, clip_title } = await askQuestion(text);
+
+      // Replace the loading message with the actual response
+      setMessages((m) => m.map(msg => 
+        msg.id === loadingMsgId 
+          ? {
+              id: loadingMsgId,
+              sender: "bot",
+              text: answer,
+              timestamps,
+              clipUrl: clip_url,
+              clipTitle: clip_title,
+              loading: false,
+            }
+          : msg
+      ));
+    } catch (err) {
+      console.error(err);
+      // Replace loading message with error
+      setMessages((m) => m.filter(msg => msg.id !== loadingMsgId));
+      setError(err.message || "An error occurred");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter') {
+  const onKeyDown = (e) => {
+    if (e.key === "Enter" && !loading) {
       e.preventDefault();
-      handleSendMessage();
+      handleSend();
     }
   };
 
-  const handleSuggestedQuestion = (question) => {
-    // Set the question in the input field or directly send it
-    setUserMessage(question);
+  // Loading dots animation component
+  const LoadingDots = () => {
+    return (
+      <div className="flex space-x-1 items-center">
+        <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: "0ms" }}></div>
+        <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: "300ms" }}></div>
+        <div className="w-2 h-2 bg-gray-400 rounded-full animate-pulse" style={{ animationDelay: "600ms" }}></div>
+      </div>
+    );
   };
 
   return (
-    <div className="flex flex-col h-screen p-4 max-w-7xl mx-auto">
-      <div className="flex flex-1 gap-4">
-        
-        
-        {/* Right panel with chat interface */}
-        <div className="w-full flex flex-col">
-          <div className="bg-gray-100 p-4 rounded-lg mb-4">
-            <p className="text-gray-700">Ask me any question about your notes or content!</p>
+    <div className="flex flex-col h-screen p-4 max-w-screen-2xl mx-auto">
+      <div className="flex-1 overflow-auto mb-4 bg-white rounded-lg shadow p-4">
+        <header className="mb-4">
+          <h1 className="text-2xl font-bold">
+            Chat about: <span className="text-purple-600">{videoTitle || "Your Video"}</span>
+          </h1>
+          {!taskId && (
+            <p className="text-red-600 mt-1">
+              No active task — process a video first.
+            </p>
+          )}
+        </header>
+
+        {messages.length === 0 && (
+          <div className="text-center text-gray-400 italic">
+            Ask a question to get started…
           </div>
-          
-          {/* Chat area (would show messages) */}
-          <div className="flex-1 mb-4 overflow-auto">
-            {/* Chat messages would be mapped here */}
-          </div>
-          
-          {/* Suggested questions */}
-          <div className="space-y-2 mb-4">
-            {suggestedQuestions.map((question, index) => (
-              <button
-                key={index}
-                className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-4 rounded-lg text-sm text-left"
-                onClick={() => handleSuggestedQuestion(question)}
-              >
-                {question}
-              </button>
-            ))}
-          </div>
-          
-          {/* Input area */}
-          <div className="relative">
-            <input
-              type="text"
-              value={userMessage}
-              onChange={(e) => setUserMessage(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Type a question here..."
-              className="w-full bg-gray-100 border-gray-200 rounded-full py-3 pl-4 pr-12 focus:outline-none"
-            />
-            <div className="absolute right-1 top-1/2 transform -translate-y-1/2 flex items-center">
-              <button 
-                onClick={handleSendMessage}
-                className="bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-full"
-              >
-                <Send size={18} />
-              </button>
-            </div>
-          </div>
-          
-          {/* Pro mode toggle */}
-          <div className="mt-4 flex items-center">
-            <input
-              type="checkbox"
-              id="proMode"
-              checked={proMode}
-              onChange={() => setProMode(!proMode)}
-              className="mr-2"
-            />
-            <label htmlFor="proMode" className="text-gray-700 text-sm">Pro Mode</label>
-            
-            <div className="ml-auto text-gray-400 text-xs">
-              Activate Windows
-              <div className="text-xs text-gray-300">Go to Settings to activate Windows</div>
-            </div>
-          </div>
+        )}
+
+        <div className="space-y-4">
+          {messages.map((msg) =>
+            msg.sender === "user" ? (
+              <div key={msg.id} className="text-right">
+                <span className="inline-block bg-purple-100 text-purple-800 px-4 py-2 rounded-full">
+                  {msg.text}
+                </span>
+              </div>
+            ) : (
+              <div key={msg.id} className="text-left space-y-2">
+                <div className="inline-block bg-gray-100 px-4 py-2 rounded-lg">
+                  {msg.loading ? (
+                    <LoadingDots />
+                  ) : (
+                    msg.text.split("\n\n").map((p, i) => (
+                      <p key={i} className="mb-2">{p}</p>
+                    ))
+                  )}
+                </div>
+                {!msg.loading && msg.timestamps?.length > 0 && (
+                  <ul className="pl-4 list-disc text-sm text-gray-600">
+                    {msg.timestamps.map((ts, i) => (
+                      <li key={i}>{ts}</li>
+                    ))}
+                  </ul>
+                )}
+                {!msg.loading && msg.clipUrl && (
+                  <div className="mt-2">
+                    <h4 className="font-semibold">{msg.clipTitle}</h4>
+                    <video
+                      src={`${API_BASE}${msg.clipUrl}`}
+                      controls
+                      className="w-full rounded mt-1 shadow"
+                    />
+                  </div>
+                )}
+              </div>
+            )
+          )}
+          <div ref={endRef} />
         </div>
+      </div>
+
+      {error && (
+        <div className="text-red-600 mb-2">
+          <strong>Error:</strong> {error}
+        </div>
+      )}
+
+      <div className="flex items-center space-x-2">
+        <input
+          type="text"
+          className="flex-1 border rounded-full p-3"
+          placeholder={
+            taskId
+              ? "Type your question..."
+              : "Cannot ask until a video is processed"
+          }
+          value={userMessage}
+          onChange={(e) => setUserMessage(e.target.value)}
+          onKeyDown={onKeyDown}
+          disabled={!taskId || loading}
+        />
+        <button
+          onClick={handleSend}
+          disabled={!taskId || loading}
+          className={`p-3 rounded-full ${
+            loading
+              ? "bg-gray-300"
+              : "bg-purple-600 hover:bg-purple-700 text-white"
+          }`}
+        >
+          <Send size={18} />
+        </button>
+      </div>
+
+      <div className="mt-3 flex items-center text-sm text-gray-600">
+        <input
+          type="checkbox"
+          id="proMode"
+          checked={proMode}
+          onChange={() => setProMode((pm) => !pm)}
+          disabled={!taskId}
+          className="mr-2 h-4 w-4 text-purple-600 rounded"
+        />
+        <label htmlFor="proMode">Pro Mode (generate clip)</label>
       </div>
     </div>
   );
-};
-
-export default InteractiveChatBot;
+}
