@@ -1,13 +1,13 @@
 // src/components/ChatBot.js
 import { useEffect, useState, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Send } from 'lucide-react';
+import { Send, ThumbsUp, ThumbsDown, Copy } from 'lucide-react';
 import { useTask } from '../TaskContext';
 
 const ChatBot = () => {
   // Get location and task context
   const location = useLocation();
-  const { taskId } = useTask(); // Get taskId from context
+  const { taskId } = useTask(); // Get taskId from context but don't display it
   
   // State management
   const [youtubeLink, setYoutubeLink] = useState('');
@@ -19,26 +19,24 @@ const ChatBot = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
 
   const videoData = location.state;
 
   // Transcript text from the example
   const transcriptText = `When I was first learning to meditate, the instruction was to simply pay attention to my breath, and when my mind wandered, to bring it back. Sounded simple enough. Yet I'd sit on these silent retreats, sweating through T-shirts in the middle of winter. I'd take naps every chance I got because it was really hard work. Actually, it was exhausting. The instruction was simple enough but I was missing something really important. So why is it so hard to pay attention? Well, studies show that even when we're really trying to pay attention to something -- like maybe this talk -- at some point, about half of us will drift off into a daydream, or have this urge to check our Twitter feed. So what's going on here? It turns out that we're fighting one of the most evolutionarily-conserved learning processes currently known in science, one that's conserved back to the most basic nervous systems known to man. This reward-based learning process is called positive and negative reinforcement, and basically goes like this. We see some food that looks good, our brain says, "Calories! ... Survival!" ...`;
   
-  // Suggested questions based on the example
+  // Suggested questions based on the example - expanded with more options
   const suggestedQuestions = [
     "Can you summarize the key ideas?",
     "Explain reward-based learning simply.",
-    "How does mindfulness break habits?"
+    "How does mindfulness break habits?",
+    "What are the main takeaways from this talk?",
+    "How can I apply these concepts in daily life?"
   ];
   
   // Embedded chat API service functions
   const chatApiService = {
-    /**
-     * Send a message to the chat API and get a response
-     * @param {Object} payload - The chat request payload
-     * @returns {Promise<string>} - The AI's response message
-     */
     async sendMessage(payload) {
       try {
         // Ensure taskId exists
@@ -46,18 +44,15 @@ const ChatBot = () => {
           throw new Error('Task ID is required but not provided');
         }
   
-        // Prepare the request body based on the API schema
         const requestBody = {
-          "type_id": "chat", // This remains as 'chat'
-          "task_id": payload.taskId, // Task ID passed from context
-          "message": payload.message, // The user's message to be sent to the chat API
-          // Commenting out optional fields for now
-          // ...(payload.videoId && { "video_id": payload.videoId }),  // Optional field: videoId, if it exists
-          // ...(payload.transcript && { "transcript": payload.transcript }),  // Optional field: transcript, if it exists
-          // ...(payload.proMode !== undefined && { "pro_mode": payload.proMode })  // Optional field: proMode, if it exists
+          "type_id": "chat",
+          "task_id": payload.taskId,
+          "message": payload.message,
+          ...(payload.videoId && { "video_id": payload.videoId }),
+          ...(payload.transcript && { "transcript": payload.transcript }),
+          ...(payload.proMode !== undefined && { "pro_mode": payload.proMode })
         };
   
-        // Make the API call
         const response = await fetch('http://127.0.0.1:8000/api/chat', {
           method: 'POST',
           headers: {
@@ -71,7 +66,7 @@ const ChatBot = () => {
         }
   
         const data = await response.json();
-        return data.response; // Based on the API response structure
+        return data.response;
       } catch (error) {
         console.error('Error calling chat API:', error);
         throw error;
@@ -79,7 +74,7 @@ const ChatBot = () => {
     }
   };
 
-  // Embedded error message component
+  // Enhanced Error Message Component
   const ErrorMessage = ({ message, onDismiss, duration = 5000 }) => {
     const [visible, setVisible] = useState(true);
   
@@ -97,10 +92,10 @@ const ChatBot = () => {
     if (!visible || !message) return null;
   
     return (
-      <div className="fixed bottom-4 right-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-md max-w-md">
+      <div className="fixed bottom-4 right-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-lg shadow-lg max-w-md animate-fadeIn">
         <div className="flex justify-between items-start">
           <div className="flex-1">
-            <p className="font-medium">Error</p>
+            <p className="font-semibold">Error</p>
             <p className="text-sm">{message}</p>
           </div>
           <button 
@@ -108,7 +103,7 @@ const ChatBot = () => {
               setVisible(false);
               onDismiss();
             }}
-            className="ml-4 text-red-500 hover:text-red-700"
+            className="ml-4 text-red-500 hover:text-red-700 transition-colors"
           >
             ×
           </button>
@@ -127,6 +122,11 @@ const ChatBot = () => {
     scrollToBottom();
   }, [messages]);
   
+  // Focus input when component mounts
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+  
   useEffect(() => {
     // Get the YouTube link from location state
     const linkFromState = location.state?.youtubeLink;
@@ -136,7 +136,6 @@ const ChatBot = () => {
       
       // Extract video ID from YouTube link
       const extractVideoId = (url) => {
-        // Handle different YouTube URL formats
         const regExp = /^.*(youtu.be\/|v\/|e\/|u\/\w+\/|embed\/|v=)([^#\&\?]*).*/;
         const match = url.match(regExp);
         return (match && match[2].length === 11) ? match[2] : null;
@@ -159,17 +158,17 @@ const ChatBot = () => {
       
       // Check if taskId exists
       if (!taskId) {
-        setError('No task ID available. Please create a task first.');
-        return "Sorry, I can't process your request without an active task.";
+        setError('Please start a new conversation before sending messages.');
+        return "I can't process your request right now. Please try again in a moment.";
       }
       
       // Use the embedded chat API service
       const response = await chatApiService.sendMessage({
         message,
-        taskId, // Include the taskId from context
-        videoId, // Use state variable directly
+        taskId,
+        videoId,
         transcript: transcriptText,
-        proMode // Use state variable directly
+        proMode
       });
       
       return response;
@@ -220,20 +219,36 @@ const ChatBot = () => {
 
   const handleSuggestedQuestion = (question) => {
     setUserMessage(question);
+    // Focus the input after selecting a question
+    inputRef.current?.focus();
+  };
+  
+  // Copy message content to clipboard
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text)
+      .then(() => {
+        // Could show a small notification here
+      })
+      .catch(err => {
+        console.error('Failed to copy text: ', err);
+      });
   };
 
   return (
-    <div className="flex flex-col h-screen p-4 max-w-screen-2xl mx-auto">
-      <div className="flex flex-1 gap-6">
-        {/* Left panel with video */}
-        <div className="w-2/5 bg-white rounded-lg shadow-sm border overflow-hidden flex flex-col">
-          {/* Video section */}
-          <div className="p-4 border-b">
-            <h2 className="text-lg font-medium text-gray-800 mb-4">Your Uploaded Video</h2>
-            <div className="relative pb-9/16 h-80">
+    <div className="flex flex-col h-screen max-w-6xl mx-auto bg-gray-50 p-6">
+      {/* Main content area with centered video on top and chat below */}
+      <div className="flex flex-col flex-1 gap-6">
+        {/* Video section - Centered at the top */}
+        <div className="w-full bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
+          <div className="p-4">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+              <span className="w-2 h-8 bg-purple-600 rounded mr-2"></span>
+              {videoTitle}
+            </h2>
+            <div className="relative pb-9/16 h-96 w-full max-w-3xl mx-auto">
               {videoId ? (
                 <iframe 
-                  className="absolute inset-0 w-full h-full"
+                  className="absolute inset-0 w-full h-full rounded-lg"
                   src={`https://www.youtube.com/embed/${videoId}`}
                   title="YouTube video player"
                   frameBorder="0"
@@ -241,54 +256,100 @@ const ChatBot = () => {
                   allowFullScreen
                 ></iframe>
               ) : (
-                <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gray-100 text-gray-500">
-                  No video loaded or invalid YouTube URL
+                <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gray-100 text-gray-500 rounded-lg">
+                  <div className="text-center p-6">
+                    <div className="mb-4 text-purple-500">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <p className="font-medium">No video loaded</p>
+                    <p className="text-sm mt-2">Please enter a valid YouTube URL to get started</p>
+                  </div>
                 </div>
               )}
             </div>
           </div>
         </div>
-        
-        {/* Right panel with chat interface - WIDENED from 1/3 to 3/5 */}
-        <div className="w-3/5 flex flex-col">
-          {/* Task status indicator */}
-          <div className={`p-2 mb-2 rounded-lg text-sm ${taskId ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+          
+        {/* Chat interface - Full width below video */}
+        <div className="flex flex-col flex-1 bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+          {/* Introduction banner */}
+          <div className="p-4 bg-gradient-to-r from-purple-700 to-purple-500 text-white">
             <div className="flex items-center">
-              <div className={`w-2 h-2 rounded-full mr-2 ${taskId ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
-              <p>{taskId ? `Task ID: ${taskId}` : 'No active task - Create a task first'}</p>
+              <div className="mr-4">
+                <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                  </svg>
+                </div>
+              </div>
+              <div>
+                <h3 className="font-medium">Video Assistant</h3>
+                <p className="text-sm text-purple-100">Ask me any question about the video content!</p>
+              </div>
             </div>
           </div>
           
-          <div className="bg-gray-100 p-4 rounded-lg mb-4">
-            <p className="text-gray-700">Ask me any question about your notes or content!</p>
-          </div>
-          
-          {/* Chat area - Make taller with more space for messages */}
-          <div className="flex-1 mb-4 overflow-auto bg-white rounded-lg shadow-sm border p-4 min-h-96">
+          {/* Chat messages area */}
+          <div className="flex-1 overflow-auto p-4 bg-gray-50 min-h-96">
             {messages.length === 0 ? (
-              <div className="text-center text-gray-400 italic mt-4">
-                Start a conversation by asking a question
+              <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                  </svg>
+                </div>
+                <p className="text-center font-medium">Start a conversation</p>
+                <p className="text-center text-sm mt-2">Ask questions about the video or select a suggestion below</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {messages.map((msg) => (
                   <div 
                     key={msg.id} 
-                    className={`${
-                      msg.sender === 'user' 
-                        ? 'bg-purple-100 ml-auto' 
-                        : 'bg-gray-100 mr-auto'
-                    } p-4 rounded-lg max-w-[85%]`}
+                    className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
-                    <p className="text-gray-800">{msg.text}</p>
+                    <div className={`
+                      ${msg.sender === 'user' 
+                        ? 'bg-purple-100 border-purple-200 text-purple-900' 
+                        : 'bg-white border-gray-200 text-gray-800'
+                      } 
+                      border rounded-2xl py-3 px-4 max-w-[80%] shadow-sm
+                    `}>
+                      <p className="whitespace-pre-wrap break-words">{msg.text}</p>
+                      
+                      {/* Message actions for bot messages */}
+                      {msg.sender === 'bot' && (
+                        <div className="flex items-center justify-end mt-2 text-gray-400 text-xs">
+                          <button 
+                            onClick={() => copyToClipboard(msg.text)}
+                            className="flex items-center hover:text-purple-600 mr-3 transition-colors"
+                          >
+                            <Copy size={14} className="mr-1" />
+                            <span>Copy</span>
+                          </button>
+                          <div className="flex items-center space-x-2">
+                            <button className="hover:text-green-600 transition-colors">
+                              <ThumbsUp size={14} />
+                            </button>
+                            <button className="hover:text-red-600 transition-colors">
+                              <ThumbsDown size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
                 {loading && (
-                  <div className="bg-gray-100 p-3 rounded-lg max-w-[85%] mr-auto">
-                    <div className="flex space-x-2">
-                      <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce"></div>
-                      <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce delay-100"></div>
-                      <div className="w-2 h-2 rounded-full bg-gray-400 animate-bounce delay-200"></div>
+                  <div className="flex justify-start">
+                    <div className="bg-white border border-gray-200 rounded-2xl py-4 px-5 max-w-[80%] shadow-sm">
+                      <div className="flex space-x-2 items-center">
+                        <div className="w-2 h-2 rounded-full bg-purple-600 animate-bounce"></div>
+                        <div className="w-2 h-2 rounded-full bg-purple-600 animate-bounce delay-100"></div>
+                        <div className="w-2 h-2 rounded-full bg-purple-600 animate-bounce delay-200"></div>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -297,57 +358,79 @@ const ChatBot = () => {
             )}
           </div>
           
-          {/* Suggested questions in a horizontal row */}
-          <div className="flex flex-wrap gap-2 mb-4">
-            {suggestedQuestions.map((question, index) => (
-              <button
-                key={index}
-                className="bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-4 rounded-lg text-sm flex-grow"
-                onClick={() => handleSuggestedQuestion(question)}
-              >
-                {question}
-              </button>
-            ))}
-          </div>
-          
-          {/* Improved input area */}
-          <div className="relative">
-            <input
-              type="text"
-              value={userMessage}
-              onChange={(e) => setUserMessage(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Type a question here..."
-              className="w-full bg-gray-100 border-gray-200 rounded-full py-3 pl-6 pr-14 focus:outline-none focus:ring-2 focus:ring-purple-500 text-base"
-              disabled={loading}
-            />
-            <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-              <button 
-                onClick={handleSendMessage}
-                className={`${
-                  loading ? 'bg-gray-400' : 'bg-purple-600 hover:bg-purple-700'
-                } text-white p-3 rounded-full transition-colors`}
-                disabled={loading}
-              >
-                <Send size={20} />
-              </button>
+          {/* Suggested questions - scrollable horizontal row */}
+          <div className="p-3 border-t border-gray-200 overflow-x-auto whitespace-nowrap">
+            <div className="flex gap-2">
+              {suggestedQuestions.map((question, index) => (
+                <button
+                  key={index}
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-800 py-2 px-4 rounded-full text-sm flex-shrink-0 transition-colors border border-gray-200"
+                  onClick={() => handleSuggestedQuestion(question)}
+                >
+                  {question}
+                </button>
+              ))}
             </div>
           </div>
           
-          {/* Pro mode toggle with improved layout */}
-          <div className="mt-4 flex items-center justify-between">
+          {/* Input area with Pro Mode toggle */}
+          <div className="p-4 bg-white border-t border-gray-200">
             <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="proMode"
-                checked={proMode}
-                onChange={() => setProMode(!proMode)}
-                className="mr-2 h-4 w-4 text-purple-600 rounded"
-              />
-              <label htmlFor="proMode" className="text-gray-700">Pro Mode</label>
+              <div className="relative flex-1">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={userMessage}
+                  onChange={(e) => setUserMessage(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Type your question here..."
+                  className="w-full bg-gray-100 border border-gray-200 rounded-full py-3 pl-6 pr-14 focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-800"
+                  disabled={loading}
+                />
+                <button 
+                  onClick={handleSendMessage}
+                  className={`absolute right-2 top-1/2 transform -translate-y-1/2
+                    ${loading 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-purple-600 hover:bg-purple-700'
+                    } text-white p-2.5 rounded-full transition-colors`}
+                  disabled={loading}
+                >
+                  <Send size={18} />
+                </button>
+              </div>
             </div>
             
-            
+            {/* Pro mode toggle */}
+            <div className="mt-3 flex items-center justify-between">
+              <div className="inline-flex items-center">
+                <div className="relative inline-block w-10 mr-2 align-middle select-none">
+                  <input 
+                    type="checkbox" 
+                    id="proMode" 
+                    checked={proMode}
+                    onChange={() => setProMode(!proMode)}
+                    className="opacity-0 absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
+                  />
+                  <label 
+                    htmlFor="proMode" 
+                    className={`block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer ${proMode ? 'bg-purple-600' : ''}`}
+                  >
+                    <span className={`block h-6 w-6 rounded-full bg-white shadow transform transition-transform ${proMode ? 'translate-x-4' : 'translate-x-0'}`}></span>
+                  </label>
+                </div>
+                <label htmlFor="proMode" className="text-sm font-medium text-gray-700">Pro Mode</label>
+                <div className="ml-2 text-gray-500 text-xs">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded bg-purple-100 text-purple-800">
+                    BETA
+                  </span>
+                </div>
+              </div>
+              
+              <div className="text-xs text-gray-500">
+                Powered by AI
+              </div>
+            </div>
           </div>
         </div>
       </div>

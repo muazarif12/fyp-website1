@@ -12,6 +12,8 @@ import EnglishSub from '../pages/englishsub'; // Add this import
 import Podcasts from '../pages/podcasts';
 import Layout from '../components/layout';
 import InteractiveChatBot from '../pages/interactivechatbot';
+import FlashcardsGenerator from "../pages/flashcard";
+
 
 
 
@@ -27,6 +29,7 @@ const AppRouter = () => {
           <Route path="/transcript" element={<Transcript />} />
           <Route path="/podcasts" element={<Podcasts />} />
           <Route path="/meetingminutes" element={<MeetingMinutes />}/>
+          <Route path="/flashcard" element={<FlashcardsGenerator />}/>
           <Route path="/studyguide" element={<StudyGuide/>}/>
           <Route path="/englishdub" element={<EnglishDub />}/> {/* Add this route */}
           <Route path="/englishsub" element={<EnglishSub />}/> You'll need this route too
