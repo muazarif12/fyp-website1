@@ -834,7 +834,7 @@ const ChatBot = () => {
           <div className="flex-1 relative">
             {videoId ? (
               <iframe 
-                className="absolute inset-0 w-full h-full"
+                className="absolute inset-0 w-full h-[400px]"
                 src={`https://www.youtube.com/embed/${videoId}`}
                 title={videoTitle || "YouTube video player"}
                 frameBorder="0"
