@@ -502,6 +502,7 @@
 
 // export default ChatBot;
 // src/components/ChatBot.js
+// src/components/ChatBot.js
 import { useEffect, useState, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Send, ThumbsUp, ThumbsDown, Copy, MessageSquare } from 'lucide-react';
@@ -965,13 +966,20 @@ const ChatBot = () => {
                       } 
                       rounded-xl py-3 px-4 max-w-[85%] shadow-md border
                     `}>
-                      <p className="whitespace-pre-wrap break-words">{msg.text}</p>
+                      <p className="whitespace-pre-wrap break-words">
+                        {msg.sender === 'bot' && msg.text.includes("***Answer:***") 
+                          ? msg.text.split("***Answer:***")[1] 
+                          : msg.text
+                        }
+                      </p>
                       
                       {/* Message actions for bot messages */}
                       {msg.sender === 'bot' && (
                         <div className="flex items-center justify-end mt-3 text-gray-400 text-xs gap-4">
                           <button 
-                            onClick={() => copyToClipboard(msg.text)}
+                            onClick={() => copyToClipboard(msg.sender === 'bot' && msg.text.includes("***Answer:***") 
+                              ? msg.text.split("***Answer:***")[1] 
+                              : msg.text)}
                             className="flex items-center hover:text-purple-300 transition-colors"
                           >
                             <Copy size={14} className="mr-1" />
