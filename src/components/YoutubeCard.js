@@ -533,7 +533,7 @@ const YouTubeCardWithModal = () => {
                     {progress > 0 ? `Processing... ${progress}%` : 'Processing...'}
                   </>
                 ) : (
-                  'Generate Notes'
+                  'Analyze Video'
                 )}
               </button>
             </div>

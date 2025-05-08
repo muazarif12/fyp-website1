@@ -501,7 +501,6 @@
 // };
 
 // export default ChatBot;
-
 // src/components/ChatBot.js
 import { useEffect, useState, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
@@ -511,23 +510,24 @@ import { useTask } from '../TaskContext';
 const ChatBot = () => {
   // Get location and task context
   const location = useLocation();
-  const { taskId } = useTask();
+  const { taskId: contextTaskId } = useTask();
   
   // State management
   const [youtubeLink, setYoutubeLink] = useState('');
   const [userMessage, setUserMessage] = useState('');
   const [videoTitle, setVideoTitle] = useState('');
   const [videoId, setVideoId] = useState('');
+  const [taskId, setTaskId] = useState('');
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [suggestedQuestions, setSuggestedQuestions] = useState([]);
   const [displayedQuestions, setDisplayedQuestions] = useState([]);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
+  const [isLocalVideo, setIsLocalVideo] = useState(false);
+  const [localVideoUrl, setLocalVideoUrl] = useState('');
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
-
-  const videoData = location.state;
 
   // Transcript text from the example
   const transcriptText = `When I was first learning to meditate, the instruction was to simply pay attention to my breath, and when my mind wandered, to bring it back. Sounded simple enough. Yet I'd sit on these silent retreats, sweating through T-shirts in the middle of winter. I'd take naps every chance I got because it was really hard work. Actually, it was exhausting. The instruction was simple enough but I was missing something really important. So why is it so hard to pay attention? Well, studies show that even when we're really trying to pay attention to something -- like maybe this talk -- at some point, about half of us will drift off into a daydream, or have this urge to check our Twitter feed. So what's going on here? It turns out that we're fighting one of the most evolutionarily-conserved learning processes currently known in science, one that's conserved back to the most basic nervous systems known to man. This reward-based learning process is called positive and negative reinforcement, and basically goes like this. We see some food that looks good, our brain says, "Calories! ... Survival!" ...`;
@@ -651,18 +651,38 @@ const ChatBot = () => {
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  // Set taskId from either context or location state
+  useEffect(() => {
+    if (location.state?.taskId) {
+      setTaskId(location.state.taskId);
+    } else if (contextTaskId) {
+      setTaskId(contextTaskId);
+    }
+  }, [location.state, contextTaskId]);
   
+  // Handle video data from location state
   useEffect(() => {
     // Get data from location state
     const linkFromState = location.state?.youtubeLink;
     const titleFromState = location.state?.videoTitle;
     
+    // Get local video data
+    const localVideoName = location.state?.videoName;
+    const localVideoUrlFromState = location.state?.videoUrl;
+    const localVideoFromState = location.state?.localVideo;
+    
+    // Set title - prioritize the explicit title, then fall back to local video name
     if (titleFromState) {
       setVideoTitle(titleFromState);
+    } else if (localVideoName) {
+      setVideoTitle(localVideoName);
     }
     
+    // Handle YouTube link
     if (linkFromState) {
       setYoutubeLink(linkFromState);
+      setIsLocalVideo(false);
       
       // Extract video ID from YouTube link
       const extractVideoId = (url) => {
@@ -677,14 +697,26 @@ const ChatBot = () => {
         
         // If no title was provided, use the video ID as a fallback for API requests
         if (!titleFromState) {
-          // You could implement a function to fetch the video title from YouTube API here
           setVideoTitle('Video ' + id);
         }
       } else {
         console.error('Invalid YouTube URL');
       }
     }
-  }, [location]);
+    
+    // Handle local video
+    if (localVideoFromState && localVideoUrlFromState) {
+      setIsLocalVideo(true);
+      setLocalVideoUrl(localVideoUrlFromState);
+      
+      if (!titleFromState && !localVideoName) {
+        setVideoTitle('Local Video');
+      }
+    }
+    
+    // Log the state for debugging
+    console.log("Location state:", location.state);
+  }, [location.state]);
   
   // Effect to fetch suggested questions when taskId is available
   useEffect(() => {
@@ -731,12 +763,15 @@ const ChatBot = () => {
         return "I can't process your request right now. Please try again in a moment.";
       }
       
+      // Use transcriptInfo from location state if available
+      const transcriptToUse = location.state?.transcriptInfo || transcriptText;
+      
       // Use the embedded chat API service
       const response = await chatApiService.sendMessage({
         message,
         taskId,
         videoId,
-        transcript: transcriptText
+        transcript: transcriptToUse
       });
       
       return response;
@@ -841,6 +876,13 @@ const ChatBot = () => {
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
               ></iframe>
+            ) : isLocalVideo && localVideoUrl ? (
+              <video 
+                className="absolute inset-0 w-full h-[400px] object-contain bg-black"
+                src={localVideoUrl}
+                title={videoTitle || "Local video player"}
+                controls
+              ></video>
             ) : (
               <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gray-900 text-gray-400">
                 <div className="text-center p-6">
@@ -850,7 +892,7 @@ const ChatBot = () => {
                     </svg>
                   </div>
                   <p className="font-medium text-xl">No video loaded</p>
-                  <p className="text-sm mt-4">Please enter a valid YouTube URL to get started</p>
+                  <p className="text-sm mt-4">Please enter a valid YouTube URL or upload a local video</p>
                 </div>
               </div>
             )}
