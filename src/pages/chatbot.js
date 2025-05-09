@@ -653,17 +653,80 @@ const ChatBot = () => {
     inputRef.current?.focus();
   }, []);
 
+  // Create a storage key based on taskId for each chat
+  const getStorageKey = (id) => `video-chat-state-${id}`;
+
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    if (!taskId) return;
+    
+    const stateToSave = {
+      messages,
+      youtubeLink,
+      videoTitle,
+      videoId,
+      suggestedQuestions,
+      displayedQuestions,
+      isLocalVideo,
+      localVideoUrl
+    };
+    
+    localStorage.setItem(getStorageKey(taskId), JSON.stringify(stateToSave));
+  }, [
+    taskId, 
+    messages, 
+    youtubeLink, 
+    videoTitle, 
+    videoId, 
+    suggestedQuestions, 
+    displayedQuestions, 
+    isLocalVideo, 
+    localVideoUrl
+  ]);
+
   // Set taskId from either context or location state
   useEffect(() => {
+    let newTaskId = '';
+    
     if (location.state?.taskId) {
-      setTaskId(location.state.taskId);
+      newTaskId = location.state.taskId;
     } else if (contextTaskId) {
-      setTaskId(contextTaskId);
+      newTaskId = contextTaskId;
+    }
+    
+    if (newTaskId) {
+      setTaskId(newTaskId);
+      
+      // Try to load saved state from localStorage
+      const savedState = localStorage.getItem(getStorageKey(newTaskId));
+      
+      if (savedState) {
+        try {
+          const parsedState = JSON.parse(savedState);
+          
+          // Restore state from localStorage
+          setMessages(parsedState.messages || []);
+          setYoutubeLink(parsedState.youtubeLink || '');
+          setVideoTitle(parsedState.videoTitle || '');
+          setVideoId(parsedState.videoId || '');
+          setSuggestedQuestions(parsedState.suggestedQuestions || []);
+          setDisplayedQuestions(parsedState.displayedQuestions || []);
+          setIsLocalVideo(parsedState.isLocalVideo || false);
+          setLocalVideoUrl(parsedState.localVideoUrl || '');
+          
+          console.log("Restored chat state from localStorage for task:", newTaskId);
+        } catch (err) {
+          console.error('Error parsing saved chat state:', err);
+        }
+      }
     }
   }, [location.state, contextTaskId]);
   
-  // Handle video data from location state
+  // Handle video data from location state only if we don't have existing state
   useEffect(() => {
+    // If we already have data from localStorage, don't override with location state
+    if (videoId || videoTitle || isLocalVideo) return;
+    
     // Get data from location state
     const linkFromState = location.state?.youtubeLink;
     const titleFromState = location.state?.videoTitle;
@@ -717,12 +780,13 @@ const ChatBot = () => {
     
     // Log the state for debugging
     console.log("Location state:", location.state);
-  }, [location.state]);
+  }, [location.state, videoId, videoTitle, isLocalVideo]);
   
   // Effect to fetch suggested questions when taskId is available
   useEffect(() => {
     const fetchQuestions = async () => {
-      if (!taskId) return;
+      // Skip fetching if we already have questions loaded
+      if (!taskId || suggestedQuestions.length > 0) return;
       
       try {
         setLoadingQuestions(true);
@@ -750,7 +814,7 @@ const ChatBot = () => {
     };
     
     fetchQuestions();
-  }, [taskId]);
+  }, [taskId, suggestedQuestions.length]);
 
   // Function to call the chat API
   const callChatAPI = async (message) => {
@@ -857,6 +921,14 @@ const ChatBot = () => {
       });
   };
 
+  // Clear chat history for current task
+  const clearChatHistory = () => {
+    if (taskId) {
+      setMessages([]);
+      localStorage.removeItem(getStorageKey(taskId));
+    }
+  };
+
   return (
     <div className="flex h-screen bg-gray-900 text-white">
       {/* Left panel - Video */}
@@ -905,14 +977,24 @@ const ChatBot = () => {
       <div className="w-1/2 flex flex-col h-full">
         {/* Chat container */}
         <div className="h-full p-4 flex flex-col">
-          <div className="bg-purple-900 rounded-t-lg shadow-lg overflow-hidden h-20 flex items-center px-6">
-            <div className="w-12 h-12 bg-purple-800 rounded-full flex items-center justify-center mr-4">
-              <MessageSquare size={24} className="text-white" />
+          <div className="bg-purple-900 rounded-t-lg shadow-lg overflow-hidden h-20 flex items-center justify-between px-6">
+            <div className="flex items-center">
+              <div className="w-12 h-12 bg-purple-800 rounded-full flex items-center justify-center mr-4">
+                <MessageSquare size={24} className="text-white" />
+              </div>
+              <div>
+                <h3 className="font-bold text-xl">Video Assistant</h3>
+                <p className="text-sm text-purple-200">Ask me anything about the video!</p>
+              </div>
             </div>
-            <div>
-              <h3 className="font-bold text-xl">Video Assistant</h3>
-              <p className="text-sm text-purple-200">Ask me anything about the video!</p>
-            </div>
+            {messages.length > 0 && (
+              <button 
+                onClick={clearChatHistory}
+                className="text-sm text-purple-200 hover:text-white hover:underline transition-colors"
+              >
+                Clear Chat
+              </button>
+            )}
           </div>
           
           {/* Messages area */}
