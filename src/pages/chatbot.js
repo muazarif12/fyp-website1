@@ -926,13 +926,13 @@ const Toast = ({ message, type = 'success', onDismiss, duration = 3000 }) => {
   if (!visible) return null;
   
   const colors = {
-    success: 'bg-green-100 border-green-500 text-green-700',
+    success: 'bg-purple-100 border-purple-500 text-purple-700',
     error: 'bg-red-100 border-red-500 text-red-700',
     info: 'bg-blue-100 border-blue-500 text-blue-700'
   };
   
   const iconColor = {
-    success: 'text-green-500',
+    success: 'text-purple-500',
     error: 'text-red-500',
     info: 'text-blue-500'
   };
