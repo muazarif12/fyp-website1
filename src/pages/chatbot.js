@@ -1000,6 +1000,11 @@ const copyToClipboard = (text) => {
       localStorage.removeItem(getStorageKey(taskId));
     }
   };
+  const extractAnswer = (text) => {
+    const match = text.match(/\*\*Answer:\*\*\s*([\s\S]*)/);
+    return match ? match[1].trim() : text;
+  };
+  
 
   return (
     <div className="flex h-screen bg-gray-900 text-white">
@@ -1121,19 +1126,18 @@ const copyToClipboard = (text) => {
                       rounded-xl py-3 px-4 max-w-[85%] shadow-md border
                     `}>
                       <p className="whitespace-pre-wrap break-words">
-                        {msg.sender === 'bot' && msg.text.includes("**Answer:**") 
-                          ? msg.text.split("**Answer:**")[1].trim()
-                          : msg.text
-                        }
+                        {msg.sender === 'bot' ? extractAnswer(msg.text) : msg.text}
                       </p>
+
                       
                       {/* Message actions for bot messages */}
                       {msg.sender === 'bot' && (
                         <div className="flex items-center justify-end mt-3 text-gray-400 text-xs gap-4">
                           <button 
-                            onClick={() => copyToClipboard(msg.sender === 'bot' && msg.text.includes("**Answer:**") 
-                              ? msg.text.split("**Answer:**")[1].trim()
-                              : msg.text)}
+                            onClick={() => copyToClipboard(
+                              msg.sender === 'bot' ? extractAnswer(msg.text) : msg.text
+                            )}
+                            
                             className="flex items-center hover:text-purple-300 transition-colors"
                           >
                             <Copy size={14} className="mr-1" />
