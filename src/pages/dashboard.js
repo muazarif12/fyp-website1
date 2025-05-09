@@ -737,7 +737,7 @@ function FeatureCarousel({ features }) {
             {features.map((f) => (
               <div
                 key={f.title}
-                className="flex-shrink-0 flex flex-col items-center p-8 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg hover:scale-105 transform transition"
+                className="flex-shrink-0 flex flex-col items-center p-8 bg-white/80 backdrop-blur-sm rounded-2xl shadow-md transform transition"
                 style={{ minWidth: 220 }}
               >
                 <div className="p-5 bg-gradient-to-br from-purple-100 to-indigo-50 rounded-full mb-4 shadow-md">
