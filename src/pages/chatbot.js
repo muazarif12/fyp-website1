@@ -1001,10 +1001,14 @@ const copyToClipboard = (text) => {
     }
   };
   const extractAnswer = (text) => {
-    const match = text.match(/\*\*Answer:\*\*\s*([\s\S]*)/);
-    return match ? match[1].trim() : text;
+    // First, check for the original answer pattern
+    const match = text.match(/\\*Answer:\\\s([\s\S]*)/);
+    const processedText = match ? match[1].trim() : text;
+    
+    // Then remove any content between <think> and </think> (including the tags)
+    // And trim any extra spaces that might be left at the start or end
+    return processedText.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
   };
-  
 
   return (
     <div className="flex h-screen bg-gray-900 text-white">
