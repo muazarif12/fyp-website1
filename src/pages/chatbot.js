@@ -967,8 +967,8 @@ const ChatBot = () => {
                       rounded-xl py-3 px-4 max-w-[85%] shadow-md border
                     `}>
                       <p className="whitespace-pre-wrap break-words">
-                        {msg.sender === 'bot' && msg.text.includes("***Answer:***") 
-                          ? msg.text.split("***Answer:***")[1] 
+                        {msg.sender === 'bot' && msg.text.includes("**Answer:**") 
+                          ? msg.text.split("**Answer:**")[1].trim()
                           : msg.text
                         }
                       </p>
@@ -977,8 +977,8 @@ const ChatBot = () => {
                       {msg.sender === 'bot' && (
                         <div className="flex items-center justify-end mt-3 text-gray-400 text-xs gap-4">
                           <button 
-                            onClick={() => copyToClipboard(msg.sender === 'bot' && msg.text.includes("***Answer:***") 
-                              ? msg.text.split("***Answer:***")[1] 
+                            onClick={() => copyToClipboard(msg.sender === 'bot' && msg.text.includes("**Answer:**") 
+                              ? msg.text.split("**Answer:**")[1].trim()
                               : msg.text)}
                             className="flex items-center hover:text-purple-300 transition-colors"
                           >
