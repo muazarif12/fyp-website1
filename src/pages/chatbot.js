@@ -910,16 +910,88 @@ const ChatBot = () => {
     inputRef.current?.focus();
   };
   
-  // Copy message content to clipboard
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text)
-      .then(() => {
-        // Could add a notification here
-      })
-      .catch(err => {
-        console.error('Failed to copy text: ', err);
-      });
+  // Toast notification component
+const Toast = ({ message, type = 'success', onDismiss, duration = 3000 }) => {
+  const [visible, setVisible] = useState(true);
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setVisible(false);
+      onDismiss?.();
+    }, duration);
+    
+    return () => clearTimeout(timer);
+  }, [duration, onDismiss]);
+  
+  if (!visible) return null;
+  
+  const colors = {
+    success: 'bg-green-100 border-green-500 text-green-700',
+    error: 'bg-red-100 border-red-500 text-red-700',
+    info: 'bg-blue-100 border-blue-500 text-blue-700'
   };
+  
+  const iconColor = {
+    success: 'text-green-500',
+    error: 'text-red-500',
+    info: 'text-blue-500'
+  };
+  
+  return (
+    <div className={`fixed bottom-4 right-4 ${colors[type]} border-l-4 p-4 rounded-lg shadow-lg max-w-md animate-fadeIn flex items-center`}>
+      <div className={`mr-3 ${iconColor[type]}`}>
+        {type === 'success' && (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        )}
+        {type === 'error' && (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        )}
+        {type === 'info' && (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        )}
+      </div>
+      <div className="flex-1">{message}</div>
+      <button 
+        onClick={() => {
+          setVisible(false);
+          onDismiss?.();
+        }}
+        className="ml-4 text-gray-500 hover:text-gray-700 transition-colors"
+      >
+        ×
+      </button>
+    </div>
+  );
+};
+
+// State for toast notifications
+const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
+
+// Copy message content to clipboard with notification
+const copyToClipboard = (text) => {
+  navigator.clipboard.writeText(text)
+    .then(() => {
+      setToast({
+        visible: true,
+        message: 'Text copied to clipboard!',
+        type: 'success'
+      });
+    })
+    .catch(err => {
+      console.error('Failed to copy text: ', err);
+      setToast({
+        visible: true,
+        message: 'Failed to copy text',
+        type: 'error'
+      });
+    });
+};
 
   // Clear chat history for current task
   const clearChatHistory = () => {
@@ -1137,7 +1209,17 @@ const ChatBot = () => {
           onDismiss={() => setError('')} 
         />
       )}
+      {/* Toast notification */}
+      {toast.visible && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onDismiss={() => setToast({ ...toast, visible: false })}
+        />
+      )}
     </div>
+    
+    
   );
 };
 
