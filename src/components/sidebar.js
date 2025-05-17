@@ -124,13 +124,6 @@ const Sidebar = () => {
      
       {/* Removed the extra expand button at the bottom since we can now click the hamburger */}
      
-      {/* Upgrade button */}
-      <div className="p-4">
-        <button className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg flex items-center justify-center">
-          <Star size={18} />
-          {!sidebarCollapsed && <span className="ml-2">Upgrade to Premium</span>}
-        </button>
-      </div>
      
       {/* User */}
       <div className="p-4 border-t flex items-center">

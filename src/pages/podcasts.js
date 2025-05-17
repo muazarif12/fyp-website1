@@ -145,10 +145,10 @@ export default function Podcasts() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-6 py-8 bg-gradient-to-b from-gray-900 to-black min-h-screen text-white">
+    <div className="max-w-3xl mx-auto px-6 py-8 bg-gradient-to-b from-[#1a1c2e] to-[#121320] min-h-screen text-white">
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-white flex items-center justify-center gap-2">
-          <span className="text-green-400">Podcasts</span>
+          <span className="text-[#9d4edd]">Podcasts</span>
         </h1>
         <p className="text-gray-400 mt-2">Listen to your notes and bring them to life.</p>
       </div>
@@ -160,7 +160,7 @@ export default function Podcasts() {
       )}
 
       {!result && !status && (
-        <div className="bg-gray-800 rounded-xl p-8 shadow-lg border border-gray-700 mb-8">
+        <div className="bg-[#252942] rounded-xl p-8 shadow-lg border border-[#3d3f5c] mb-8">
           <p className="text-gray-300 mb-6">
             Generate an AI podcast from your processed video content with a single click.
           </p>
@@ -168,7 +168,7 @@ export default function Podcasts() {
           <button
             onClick={handleGeneratePodcast}
             disabled={isGenerating || !taskId}
-            className="w-full bg-green-500 hover:bg-green-600 text-white font-medium py-4 px-6 rounded-full transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full bg-[#9d4edd] hover:bg-[#b44afc] text-white font-medium py-4 px-6 rounded-full transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isGenerating ? (
               <span className="inline-flex items-center">
@@ -192,8 +192,8 @@ export default function Podcasts() {
       )}
 
       {status === "processing" && (
-        <div className="bg-gray-800 rounded-xl p-8 shadow-lg border border-gray-700 flex flex-col items-center justify-center text-center">
-          <Loader2 className="animate-spin w-12 h-12 text-green-500 mb-4" />
+        <div className="bg-[#252942] rounded-xl p-8 shadow-lg border border-[#3d3f5c] flex flex-col items-center justify-center text-center">
+          <Loader2 className="animate-spin w-12 h-12 text-[#9d4edd] mb-4" />
           <h3 className="text-xl font-medium mb-2">Creating your podcast</h3>
           <p className="text-gray-400">
             We're transforming your content into an engaging audio experience...
@@ -204,9 +204,9 @@ export default function Podcasts() {
       {result && (
         <div className="space-y-8">
           {/* Spotify-like Player */}
-          <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-xl shadow-xl p-6 border border-gray-700">
+          <div className="bg-gradient-to-r from-[#252942] to-[#1e1f35] rounded-xl shadow-xl p-6 border border-[#3d3f5c]">
             <div className="flex items-center mb-6">
-              <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-green-500 rounded-lg flex items-center justify-center flex-shrink-0 mr-4">
+              <div className="w-24 h-24 bg-gradient-to-br from-[#9d4edd] to-[#7b2cbf] rounded-lg flex items-center justify-center flex-shrink-0 mr-4">
                 <Volume2 className="w-10 h-10 text-white" />
               </div>
               <div>
@@ -222,12 +222,12 @@ export default function Podcasts() {
               <div className="flex items-center gap-4">
                 <button 
                   onClick={togglePlayPause}
-                  className="w-12 h-12 bg-green-500 hover:bg-green-400 rounded-full flex items-center justify-center flex-shrink-0 transition"
+                  className="w-12 h-12 bg-[#9d4edd] hover:bg-[#b44afc] rounded-full flex items-center justify-center flex-shrink-0 transition"
                 >
                   {isPlaying ? (
-                    <Pause className="w-6 h-6 text-black" />
+                    <Pause className="w-6 h-6 text-white" />
                   ) : (
-                    <Play className="w-6 h-6 text-black ml-1" />
+                    <Play className="w-6 h-6 text-white ml-1" />
                   )}
                 </button>
                 
@@ -242,10 +242,10 @@ export default function Podcasts() {
                     max="100"
                     value={(currentTime / (duration || 1)) * 100}
                     onChange={handleSeek}
-                    className="w-full h-1 bg-gray-600 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
+                    className="w-full h-1 bg-[#3d3f5c] rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white"
                   />
                   <div 
-                    className="absolute top-0 left-0 h-1 bg-green-500 rounded-full pointer-events-none"
+                    className="absolute top-0 left-0 h-1 bg-[#9d4edd] rounded-full pointer-events-none"
                     style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
                   ></div>
                 </div>
@@ -258,7 +258,7 @@ export default function Podcasts() {
               <div className="flex justify-end gap-4">
                 <a
                   href={`${API_BASE}${result.audio_url}`}
-                  className="inline-flex items-center text-gray-400 hover:text-green-400 text-sm transition"
+                  className="inline-flex items-center text-gray-400 hover:text-[#9d4edd] text-sm transition"
                   download
                 >
                   <Download className="w-4 h-4 mr-1" />
@@ -270,17 +270,17 @@ export default function Podcasts() {
 
           {/* Transcript Section */}
           {transcriptText && (
-            <div className="bg-gray-800 rounded-xl p-6 shadow-lg border border-gray-700">
+            <div className="bg-[#252942] rounded-xl p-6 shadow-lg border border-[#3d3f5c]">
               <h3 className="flex items-center gap-2 font-medium text-white text-xl mb-4">
-                <FileText className="h-5 w-5 text-green-500" />
+                <FileText className="h-5 w-5 text-[#9d4edd]" />
                 Transcript
               </h3>
-              <div className="border border-gray-700 rounded-lg p-4 max-h-64 overflow-auto bg-gray-900 whitespace-pre-wrap text-gray-300 text-sm">
+              <div className="border border-[#3d3f5c] rounded-lg p-4 max-h-64 overflow-auto bg-[#1e1f35] whitespace-pre-wrap text-gray-300 text-sm">
                 {transcriptText}
               </div>
               <a
                 href={`${API_BASE}${result.transcript_url}`}
-                className="inline-flex items-center mt-4 text-green-500 hover:text-green-400 transition"
+                className="inline-flex items-center mt-4 text-[#9d4edd] hover:text-[#b44afc] transition"
                 download
               >
                 <Download className="w-4 h-4 mr-1" />
